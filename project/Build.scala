@@ -21,7 +21,10 @@ object Dependencies {
 }
 
 object Resolvers {
-  val dockerTestKitResolver = "Whisk" at "https://dl.bintray.com/whisk/maven"
+  val dockerTestKitResolvers = Seq(
+    "whisk" at "https://dl.bintray.com/whisk/maven",
+    "softprops" at "http://dl.bintray.com/content/softprops/maven"
+  )
 }
 
 object DrizzleBuild extends Build {
@@ -38,7 +41,7 @@ object DrizzleBuild extends Build {
   )
 
   val dockerTestKitSettings = Seq(
-    resolvers += dockerTestKitResolver,
+    resolvers ++= dockerTestKitResolvers,
     libraryDependencies ++= Seq(dockerTestKitScalaTest)
   )
 
