@@ -10,12 +10,8 @@ import net.paoloambrosio.drizzle.metrics.{Request, VUser}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.duration._
-
 class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with UnixFallbackDockerTestKit
   with DockerInfluxDBService {
-
-  override implicit def patienceConfig = PatienceConfig(timeout = 1 second)
 
   val RFC_3339_MS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX")
 
