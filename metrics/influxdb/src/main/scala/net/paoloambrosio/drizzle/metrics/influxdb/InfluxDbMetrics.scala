@@ -13,14 +13,13 @@ class InfluxDbMetrics(metricsDb: Database)(implicit ec: ExecutionContext) extend
   val MCS_IN_NS = 1000
 
   override def store(request: Request): Future[Unit] = {
-    val requestDurationMcs = request.elapsed.getNano / MCS_IN_NS
-    metricsDb.write(
-      point=
-        Point(
-        key="request",
-        timestamp=toNanoTimestamp(request.absoluteStart)
-      ).addField("elapsed_mcs", requestDurationMcs)
-    ) map { _ => () }
+    val requestDurationMcs = request.responseTime.getNano / MCS_IN_NS
+    val point = Point(key = "request", timestamp = toNanoTimestamp(request.absoluteStart))
+      .addTag("runId", request.vuser.run.id)
+      .addTag("vUserId", request.vuser.id)
+      .addTag("requestId", request.id)
+      .addField("responseTime", requestDurationMcs)
+    metricsDb.write(point) map { _ => () }
   }
 
   def toNanoTimestamp(dateTime: OffsetDateTime) = {

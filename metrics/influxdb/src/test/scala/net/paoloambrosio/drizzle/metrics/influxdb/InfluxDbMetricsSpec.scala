@@ -1,19 +1,18 @@
 package net.paoloambrosio.drizzle.metrics.influxdb
 
 import java.time.format.DateTimeFormatter
-import java.time.temporal.{ChronoUnit => jChronoUnit}
-import java.time.{Duration => jDuration, OffsetDateTime => jOffsetDateTime, ZoneOffset}
+import java.time.{OffsetDateTime => jOffsetDateTime}
+
+import scala.concurrent.duration._
 
 import com.paulgoldbaum.influxdbclient.{Database, InfluxDB}
 import common._
-import net.paoloambrosio.drizzle.metrics.{Request, VUser}
+import net.paoloambrosio.drizzle.metrics._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
 class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with UnixFallbackDockerTestKit
   with DockerInfluxDBService {
-
-  val RFC_3339_MS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX")
 
   lazy val influxDbHost = docker.host
   lazy val influxDbPort = influxdbContainer.getPorts().futureValue.apply(InfluxDBAPI)
@@ -28,25 +27,28 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
 
   lazy val influxDbMetrics = new InfluxDbMetrics(metricsDb)
 
-  it should "write a single request" in {
-    val vUser = VUser(vUserStartTime)
-    val request = Request(
-        vUser,
-        start=jDuration.of(42, jChronoUnit.SECONDS),
-      elapsed=jDuration.of(13000, jChronoUnit.NANOS)
-    )
+  it should "write metrics for a single request" in {
+    val run = SimulationRun("runIdX", absoluteStart = simulationRunStart)
+    val vUser = VUser(run, "vUserIdY", start = 3 seconds)
+    val request = Request(vUser, "requestIdZ", start = 7 seconds, responseTime = 13 micros)
 
     val x = influxDbMetrics.store(request).futureValue
 
-    val response = metricsDb.query("SELECT elapsed_mcs FROM request").futureValue
+    val response = metricsDb.query("SELECT runId,vUserId,requestId,responseTime FROM request").futureValue
     val result = response.series.head
-    result.points(0) shouldBe timePoints(request)
-    result.points(1) shouldBe elapsedMcsPoints(request)
+    parseTimes(result.points(0)) shouldBe requestsStart(request)
+    result.points(1) shouldBe List(run.id)
+    result.points(2) shouldBe List(vUser.id)
+    result.points(3) shouldBe List(request.id)
+    result.points(4) shouldBe requestsResponseTime(request)
   }
 
-  private def timePoints(requests: Request*) = requests map (_.absoluteStart.atZoneSameInstant(ZoneOffset.UTC).format(RFC_3339_MS))
-  private def elapsedMcsPoints(requests: Request*) = requests map (_.elapsed.getNano / 1000)
+  private def parseTimes(values: List[Any]) = values map (v => parseTime(v.toString))
+  private def parseTime(value: String) = jOffsetDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME)
+
+  private def requestsStart(requests: Request*) = requests map (_.absoluteStart)
+  private def requestsResponseTime(requests: Request*) = requests map (_.responseTime.getNano / 1000)
 
   // InfluxDB seems to ignore in queries data points that are less than 30 seconds in the past
-  private val vUserStartTime = jOffsetDateTime.now().minus(42, jChronoUnit.SECONDS)
+  private val simulationRunStart = jOffsetDateTime.now().minus(5 minutes)
 }
