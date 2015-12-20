@@ -45,13 +45,21 @@ object DrizzleBuild extends Build {
     libraryDependencies ++= Seq(dockerTestKitScalaTest)
   )
 
-  lazy val metricsInfluxDb = Project(id="metrics-influxdb", base=file("metrics/influxdb"),
-    settings = buildSettings ++ dockerTestKitSettings ++ Seq(
-      libraryDependencies ++= commonDeps ++ Seq(
-        "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.0"
-      )
+  lazy val metricsCommon =  Project(
+      id = "metrics-common",
+      base = file("metrics/common"),
+      settings = buildSettings
     )
-  )
+
+  lazy val metricsInfluxDb = Project(
+      id = "metrics-influxdb",
+      base = file("metrics/influxdb"),
+      settings = buildSettings ++ dockerTestKitSettings ++ Seq(
+        libraryDependencies ++= commonDeps ++ Seq(
+          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.0"
+        )
+      )
+    ).dependsOn(metricsCommon)
 
 }
 
