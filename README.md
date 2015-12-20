@@ -4,7 +4,7 @@ It doesn't do anything yet.
 
 ## Build
 
-![Build Status](https://circleci.com/gh/paoloambrosio/drizzle.svg?style=shield)
+[![Build Status](https://circleci.com/gh/paoloambrosio/drizzle.svg?style=shield)](https://circleci.com/gh/paoloambrosio/drizzle)
 
 ```
 sbt package
