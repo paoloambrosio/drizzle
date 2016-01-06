@@ -3,12 +3,12 @@ package net.paoloambrosio.drizzle.core
 import java.time.OffsetDateTime
 
 import akka.actor.Scheduler
-import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import com.miguno.akka.testing.VirtualTime
-import org.scalatest.{Matchers, FlatSpec}
+import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
+import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Random, Success}
 

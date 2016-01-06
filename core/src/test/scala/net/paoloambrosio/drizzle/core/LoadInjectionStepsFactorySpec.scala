@@ -2,7 +2,7 @@ package net.paoloambrosio.drizzle.core
 
 import java.time.Duration
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 class LoadInjectionStepsFactorySpec extends FlatSpec with Matchers {
 

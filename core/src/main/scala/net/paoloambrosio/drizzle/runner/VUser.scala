@@ -1,8 +1,8 @@
 package net.paoloambrosio.drizzle.runner
 
-import java.time.{OffsetDateTime, Duration}
+import java.time.{Clock, Duration, OffsetDateTime}
 
-import akka.actor.{Actor, Props, Scheduler}
+import akka.actor.{Actor, Props}
 import net.paoloambrosio.drizzle.core._
 
 import scala.concurrent.ExecutionContext
@@ -19,11 +19,11 @@ object VUser {
     * @param scenario Scenario to run
     * @return a Props for creating a VUser
     */
-  def props(scenario: Scenario): Props = Props(new VUser(scenario))
+  def props(scenario: Scenario)(implicit clock: Clock): Props = Props(new VUser(scenario, clock))
 
 }
 
-class VUser(scenario: Scenario) extends Actor {
+class VUser(scenario: Scenario, clock: Clock) extends Actor {
 
   import VUser._
 
@@ -34,13 +34,14 @@ class VUser(scenario: Scenario) extends Actor {
   override def receive = {
     case Run => {
       steps = scenario.steps
-      val initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(), Duration.ZERO))
       processStep(initialContext)
     }
     case NextStep(context) => {
       processStep(context)
     }
   }
+
+  private def initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
 
   private def processStep(beginContext: ScenarioContext) = {
     steps match {

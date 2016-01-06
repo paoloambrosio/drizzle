@@ -1,3 +1,5 @@
 package net.paoloambrosio.drizzle.core
 
-object ScenarioActionFactory extends SleepActionFactory
+object ScenarioActionFactory
+  extends TimedActionFactory
+  with SleepActionFactory

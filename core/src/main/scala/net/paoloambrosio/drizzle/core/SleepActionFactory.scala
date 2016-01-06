@@ -1,13 +1,12 @@
 package net.paoloambrosio.drizzle.core
 
-import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
-
 import java.time.Duration
 
 import akka.actor.Scheduler
 import akka.pattern.after
+import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 
 trait SleepActionFactory {
 

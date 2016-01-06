@@ -6,9 +6,11 @@ import scala.concurrent.Future
 
 package object core {
 
+  type SessionVariables = Unit
+
   case class ActionTimers(start: OffsetDateTime, elapsedTime: Duration)
 
-  case class ScenarioContext(lastAction: ActionTimers)
+  case class ScenarioContext(lastAction: ActionTimers, sessionVariables: SessionVariables = ())
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext]
 

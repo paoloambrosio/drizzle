@@ -1,6 +1,7 @@
 package net.paoloambrosio.drizzle.utils
 
 import java.{time => j}
+
 import scala.concurrent.{duration => s}
 
 object JavaTimeConversions {

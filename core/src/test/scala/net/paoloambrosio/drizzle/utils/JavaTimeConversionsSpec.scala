@@ -2,10 +2,10 @@ package net.paoloambrosio.drizzle.utils
 
 import java.{time => j}
 
-import scala.concurrent.{duration => s}
+import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.scalatest._
-import JavaTimeConversions._
 
+import scala.concurrent.{duration => s}
 import scala.util.Random
 
 class JavaTimeConversionsSpec extends FlatSpec with Matchers {

@@ -1,16 +1,17 @@
 package net.paoloambrosio.drizzle.runner
 
+import java.time.Clock
+
 import akka.actor.ActorSystem
 import akka.testkit.{CallingThreadDispatcher, TestKit}
 import com.miguno.akka.testing.VirtualTime
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.runner.VUser._
-import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.scalatest.{FlatSpecLike, Matchers}
 import utils.CallingThreadExecutionContext
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 class VUserSpec extends TestKit(ActorSystem("mock-scheduler")) with FlatSpecLike with Matchers {
@@ -43,6 +44,7 @@ class VUserSpec extends TestKit(ActorSystem("mock-scheduler")) with FlatSpecLike
 
   trait TestContext extends ActionFactory with MockTime {
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
+    val clock: Clock = Clock.systemUTC() // TODO needs a test to verify initial context
 
     val runStart = time.elapsed
 
@@ -51,7 +53,7 @@ class VUserSpec extends TestKit(ActorSystem("mock-scheduler")) with FlatSpecLike
 
     def actorFor(actions: ScenarioAction*) = {
       val steps = actions.map(ScenarioStep("step", _)).toStream
-      system.actorOf(props(Scenario("scenario", steps)).withDispatcher(CallingThreadDispatcher.Id))
+      system.actorOf(props(Scenario("scenario", steps))(clock).withDispatcher(CallingThreadDispatcher.Id))
     }
   }
 
