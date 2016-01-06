@@ -11,9 +11,11 @@ package object core {
   case class ScenarioContext(lastAction: ActionTimers)
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext]
-  object ScenarioActionFactory extends SleepActionFactory
 
-  class ScenarioStep(val name: String, val exec: ScenarioAction)
+  case class ScenarioStep(val name: String, val action: ScenarioAction)
 
-  class Scenario(val name: String, val steps: Seq[ScenarioStep])
+  case class Scenario(val name: String, val steps: Stream[ScenarioStep])
+
+  case class LoadProfile(val scenario: Scenario, val loadInjectionSteps: Stream[Duration])
+
 }

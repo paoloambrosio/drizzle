@@ -11,10 +11,23 @@ import scala.concurrent.{Future, ExecutionContext}
 
 trait SleepActionFactory {
 
-  def sleep(duration: Duration)(implicit ec: ExecutionContext, scheduler: Scheduler): ScenarioAction = {
-    scenarioContext: ScenarioContext => after(duration, scheduler)(Future.successful(scenarioContext))
+  /**
+    * Pause from the end of the previous action.
+    *
+    * @param duration
+    */
+  def thinkTime(duration: Duration)(implicit ec: ExecutionContext, scheduler: Scheduler): ScenarioAction = {
+    scenarioContext: ScenarioContext => {
+      after(duration, scheduler)(Future.successful(scenarioContext))
+    }
   }
 
+  /**
+    * Pause from the beginning of the previous action, or no pause if the
+    * execution time was longer than the pause.
+    *
+    * @param duration
+    */
   def pacing(duration: Duration)(implicit ec: ExecutionContext, scheduler: Scheduler): ScenarioAction = {
     scenarioContext: ScenarioContext => {
       val sleepTime = duration - scenarioContext.lastAction.elapsedTime

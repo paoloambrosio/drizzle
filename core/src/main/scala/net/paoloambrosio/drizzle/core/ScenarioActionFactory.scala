@@ -1,0 +1,3 @@
+package net.paoloambrosio.drizzle.core
+
+object ScenarioActionFactory extends SleepActionFactory
