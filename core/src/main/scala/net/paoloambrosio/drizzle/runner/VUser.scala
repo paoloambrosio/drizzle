@@ -19,7 +19,7 @@ object VUser {
     * @param scenario Scenario to run
     * @return a Props for creating a VUser
     */
-  def props(scenario: Scenario)(implicit clock: Clock): Props = Props(new VUser(scenario, clock))
+  def props(scenario: Scenario, clock: Clock = Clock.systemUTC()): Props = Props(new VUser(scenario, clock))
 
 }
 

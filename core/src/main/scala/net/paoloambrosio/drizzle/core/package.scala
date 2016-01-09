@@ -18,6 +18,6 @@ package object core {
 
   case class Scenario(val name: String, val steps: Stream[ScenarioStep])
 
-  case class LoadProfile(val scenario: Scenario, val loadInjectionSteps: Stream[Duration])
+  type LoadProfile = Stream[Duration]
 
 }
