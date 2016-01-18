@@ -10,7 +10,8 @@ import scala.util.{Failure, Success}
 
 object VUser {
 
-  case object Run
+  case object Start // IN
+
   private case class NextStep(context: ScenarioContext)
 
   /**
@@ -23,6 +24,9 @@ object VUser {
 
 }
 
+// TODO use FSM Running/NotRunning?
+// NotRunning -> Start(scenario)
+// Running -> NextStep(context), Stop
 class VUser(scenario: Scenario, clock: Clock) extends Actor {
 
   import VUser._
@@ -32,11 +36,12 @@ class VUser(scenario: Scenario, clock: Clock) extends Actor {
   private var steps = Stream.empty[ScenarioStep]
 
   override def receive = {
-    case Run => {
+    case Start => {
       steps = scenario.steps
       processStep(initialContext)
     }
     case NextStep(context) => {
+      // TODO check that it comes from this same actor!
       processStep(context)
     }
   }
@@ -51,10 +56,10 @@ class VUser(scenario: Scenario, clock: Clock) extends Actor {
           case Success(endContext) => {
             self ! NextStep(endContext)
           }
-          case Failure(t) => // TODO
+          case Failure(t) => // TODO send message to the oerchestrator and die?
         }
       }
-      case _ => // TODO
+      case _ => // TODO send message to the oerchestrator and die?
     }
   }
 

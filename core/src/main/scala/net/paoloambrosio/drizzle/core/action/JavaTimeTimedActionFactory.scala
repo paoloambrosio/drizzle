@@ -1,12 +1,17 @@
-package net.paoloambrosio.drizzle.core
+package net.paoloambrosio.drizzle.core.action
 
 import java.time.{Clock, Duration, OffsetDateTime}
 
+import net.paoloambrosio.drizzle.core._
+
 import scala.concurrent.{ExecutionContext, Future}
 
-trait TimedActionFactory {
+trait JavaTimeTimedActionFactory extends TimedActionFactory {
 
-  def timedAction(f: SessionVariables => Future[SessionVariables])(implicit ec: ExecutionContext, clock: Clock): ScenarioAction = {
+  implicit def ec: ExecutionContext
+  def clock: Clock
+
+  override def timedAction(f: SessionVariables => Future[SessionVariables]): ScenarioAction = {
     scenarioContext: ScenarioContext => {
       val startTime = OffsetDateTime.now(clock)
       val nanoTime = System.nanoTime()

@@ -1,14 +1,16 @@
-package net.paoloambrosio.drizzle.core
+package net.paoloambrosio.drizzle.core.action
 
 import java.time._
 
+import net.paoloambrosio.drizzle.core._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class TimedActionFactorySpec extends FlatSpec with Matchers with ScalaFutures {
+class JavaTimeTimedActionFactorySpec extends FlatSpec
+    with Matchers with ScalaFutures {
 
   "timedAction" should "record start and elapsed times" in new TestContext {
     val action = timedAction(sessionVariables => Future.successful(sessionVariables))
@@ -22,13 +24,14 @@ class TimedActionFactorySpec extends FlatSpec with Matchers with ScalaFutures {
 
   // HELPERS
 
-  trait TestContext extends TimedActionFactory {
-    implicit val ec: ExecutionContext = new CallingThreadExecutionContext
+  trait TestContext extends JavaTimeTimedActionFactory {
+    override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
+    override lazy val clock = t1clock
 
     val sessionVariables: SessionVariables = ()
 
     private val t0clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
-    implicit val t1clock: Clock = Clock.offset(t0clock, Duration.ofSeconds(2))
+    val t1clock: Clock = Clock.offset(t0clock, Duration.ofSeconds(2))
 
     def passedContext = ScenarioContext(ActionTimers(OffsetDateTime.now(t0clock), Duration.ZERO))
   }

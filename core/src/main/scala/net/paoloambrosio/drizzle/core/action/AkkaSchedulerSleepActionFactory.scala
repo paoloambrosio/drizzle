@@ -1,21 +1,25 @@
-package net.paoloambrosio.drizzle.core
+package net.paoloambrosio.drizzle.core.action
 
 import java.time.Duration
 
 import akka.actor.Scheduler
 import akka.pattern.after
+import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait SleepActionFactory {
+trait AkkaSchedulerSleepActionFactory extends SleepActionFactory {
+
+  implicit def ec: ExecutionContext
+  implicit def scheduler: Scheduler
 
   /**
     * Pause from the end of the previous action.
     *
     * @param duration
     */
-  def thinkTime(duration: Duration)(implicit ec: ExecutionContext, scheduler: Scheduler): ScenarioAction = {
+  override def thinkTime(duration: Duration): ScenarioAction = {
     scenarioContext: ScenarioContext => {
       after(duration, scheduler)(Future.successful(scenarioContext))
     }
@@ -27,7 +31,7 @@ trait SleepActionFactory {
     *
     * @param duration
     */
-  def pacing(duration: Duration)(implicit ec: ExecutionContext, scheduler: Scheduler): ScenarioAction = {
+  override def pacing(duration: Duration): ScenarioAction = {
     scenarioContext: ScenarioContext => {
       val sleepTime = duration - scenarioContext.lastAction.elapsedTime
       after(sleepTime, scheduler)(Future.successful(scenarioContext))

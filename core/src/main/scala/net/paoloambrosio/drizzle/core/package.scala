@@ -14,10 +14,10 @@ package object core {
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext]
 
-  case class ScenarioStep(val name: String, val action: ScenarioAction)
+  case class ScenarioStep(name: String, action: ScenarioAction)
 
-  case class Scenario(val name: String, val steps: Stream[ScenarioStep])
+  case class Scenario(name: String, steps: Stream[ScenarioStep])
 
-  type LoadProfile = Stream[Duration]
+  case class ScenarioProfile(scenario: Scenario, loadProfile: Seq[Duration])
 
 }
