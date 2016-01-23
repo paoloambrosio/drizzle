@@ -1,14 +1,14 @@
 package net.paoloambrosio.drizzle.runner
 
-import akka.actor.ActorSystem
 import akka.testkit.{CallingThreadDispatcher, ImplicitSender, TestKit}
 import net.paoloambrosio.drizzle.core.Scenario
 import net.paoloambrosio.drizzle.runner.Orchestrator._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import utils.TestActorSystem
 
 
-class OrchestratorSpec extends TestKit(ActorSystem("test-system")) with ImplicitSender
+class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
     with FlatSpecLike with Matchers with BeforeAndAfterAll with Eventually {
 
   override def afterAll {

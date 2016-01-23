@@ -31,8 +31,8 @@ class Orchestrator extends Actor {
   }
 
   def startVUser(s: Scenario) {
-    val vuser = context.actorOf(VUser.props(s))
-    vuser ! VUser.Start
+    val vuser = context.actorOf(VUser.props())
+    vuser ! VUser.Start(s)
   }
 
 }
