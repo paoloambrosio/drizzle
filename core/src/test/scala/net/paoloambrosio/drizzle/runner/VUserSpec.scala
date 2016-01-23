@@ -1,111 +1,113 @@
 package net.paoloambrosio.drizzle.runner
 
-import java.time.{Clock, Instant, OffsetDateTime, ZoneId}
+import java.time._
 
-import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestFSMRef, TestKit}
-import com.miguno.akka.testing.VirtualTime
-import com.typesafe.config.ConfigFactory
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.runner.VUser._
-import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
-import utils.{TestActorSystem, CallingThreadExecutionContext}
+import utils.{CallingThreadExecutionContext, TestActorSystem}
 
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Random
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
-    with FlatSpecLike with Matchers with BeforeAndAfterAll with Eventually {
+    with FlatSpecLike with Matchers with BeforeAndAfterAll {
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
 
-  it should "run actions sequentially" in new TestContext {
-    actionsStart shouldBe Seq.empty
-
-    vuser ! Start(scenario(fast(), delayed(someDelay), fast()))
-
-    expectMsg(VUser.Success)
-    actionsStart shouldBe Seq(runStart, runStart, someDelay)
-  }
-
   it should "pass new context to the next step" in new TestContext {
-    val ic = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.Zero))
+    val ic = initialContext
     val f = incrementStartByASecond
 
-    vuser ! Start(scenario(fast(f), fast(f)))
+    vuser ! Start(scenario(successful(f), successful(f)))
 
     expectMsg(VUser.Success)
     contexts shouldBe Seq((ic, f(ic)),(f(ic),f(f(ic))))
   }
 
   it should "stop on exceptions in actions" in new TestContext {
+    val ic = initialContext
+    val f = incrementStartByASecond
     val exception = new Exception("BOOM!")
 
-    vuser ! Start(scenario(failing(exception), fast()))
+    vuser ! Start(scenario(successful(f), failing(exception), successful()))
 
     expectMsg(VUser.Failure(exception))
-    actionsStart shouldBe Seq(runStart)
+    contexts shouldBe Seq((ic, f(ic)))
+  }
+
+  it should "run async actions sequentially" in new TestContext {
+    vuser ! Start(scenario(async(), async()))
+
+    actionsExecuted shouldBe 0
+    advance()
+    actionsExecuted shouldBe 1
+    advance()
+    expectMsg(VUser.Success)
+    actionsExecuted shouldBe 2
+  }
+
+  it should "stop when requested" in new TestContext {
+    vuser ! Start(scenario(async(), async()))
+
+    actionsExecuted shouldBe 0
+    advance()
+    vuser ! Stop
+
+    expectMsg(VUser.Success)
+    actionsExecuted shouldBe 1
   }
 
   // HELPERS
 
-  trait TestContext extends ActionFactory {
-    override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
-    val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
-
-    val time = new VirtualTime
-    val runStart = time.elapsed
+  trait TestContext {
+    implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
     lazy val vuser = TestFSMRef(new VUser(clock), testActor)
-
-    lazy val someDelay = (new Random().nextInt(9)+1) seconds
 
     def scenario(actions: ScenarioAction*) = {
       val steps = actions.map(ScenarioStep("step", _)).toStream
       Scenario("scenario", steps)
     }
-  }
 
-  // TODO remove virtual timer here!
-  trait ActionFactory {
-    implicit def ec: ExecutionContext
-    def time: VirtualTime
+    val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
+    val initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
+    val incrementStartByASecond: ScenarioContext => ScenarioContext = { c =>
+      // It is worth introducing a lens library?
+      c.copy(lastAction = c.lastAction.copy(start = c.lastAction.start.plusSeconds(1)))
+    }
 
-    var actionsStart = Seq.empty[FiniteDuration]
-    var contexts = Seq.empty[(ScenarioContext, ScenarioContext)]
-
-    def fast(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
-      actionsStart :+= time.elapsed
+    def successful(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
       Future.successful(f(c))
     }}
 
-    def delayed(d: FiniteDuration) = recordContext { c: ScenarioContext => {
-      actionsStart :+= time.elapsed
-      time.advance(d)
-      Future.successful(c)
-    }}
-
     def failing(e: Exception) = recordContext { c: ScenarioContext => {
-      actionsStart :+= time.elapsed
       Future.failed(e)
     }}
 
+    def async(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
+      val p = Promise[ScenarioContext]()
+      steps :+= { () => p.success(f(c)) }
+      p.future
+    }}
+
+    private var steps = Seq[() => Any]()
+    def advance() = steps match {
+      case h :: t => steps = t; h()
+      case _ => throw new IllegalStateException("No steps left!")
+    }
+
+    var contexts = Seq.empty[(ScenarioContext, ScenarioContext)]
     private def recordContext(action: ScenarioAction): ScenarioAction = { sc: ScenarioContext =>
       action(sc).map(ec => {
         contexts :+= (sc, ec)
         ec
       })
     }
-
-    val incrementStartByASecond: ScenarioContext => ScenarioContext = { c =>
-      // It is worth introducing a lens library?
-      c.copy(lastAction = c.lastAction.copy(start = c.lastAction.start.plusSeconds(1)))
-    }
+    def actionsExecuted = contexts.length
   }
 
 }
