@@ -13,10 +13,10 @@ object Dependencies {
   val akkaV = "2.4.1"
 
   val akkaActor   = "com.typesafe.akka" %% "akka-actor"   % akkaV
-  val akkaCluster = "com.typesafe.akka" %% "akka-cluster" % akkaV
 
   val scalaTest              = "org.scalatest"     %% "scalatest"                % "2.2.4"        % Test
   val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"             % akkaV          % Test
+  val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"      % "0.4.0"        % Test
   val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest" % "0.4.0"        % Test
 }
 
@@ -35,27 +35,42 @@ object DrizzleBuild extends Build {
 
   val commonDeps = Seq(
     akkaActor,
-    akkaCluster,
     akkaTestkit,
     scalaTest
   )
 
+  val commonSettings = buildSettings ++ Seq(
+    libraryDependencies ++= commonDeps
+  )
+
   val dockerTestKitSettings = Seq(
     resolvers ++= dockerTestKitResolvers,
-    libraryDependencies ++= Seq(dockerTestKitScalaTest)
+    libraryDependencies ++= Seq(
+      dockerTestKitScalaTest
+    )
   )
+
+  lazy val core =  Project(
+      id = "core",
+      base = file("core"),
+      settings = commonSettings ++ Seq(
+        libraryDependencies ++= Seq(
+          akkaMockScheduler
+        )
+      )
+    )
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
       base = file("metrics/common"),
-      settings = buildSettings
+      settings = commonSettings
     )
 
   lazy val metricsInfluxDb = Project(
       id = "metrics-influxdb",
       base = file("metrics/influxdb"),
-      settings = buildSettings ++ dockerTestKitSettings ++ Seq(
-        libraryDependencies ++= commonDeps ++ Seq(
+      settings = commonSettings ++ dockerTestKitSettings ++ Seq(
+        libraryDependencies ++= Seq(
           "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.0"
         )
       )
