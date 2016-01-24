@@ -56,7 +56,13 @@ object DrizzleBuild extends Build {
       id = "root",
       base = file("."),
       settings = buildSettings
-    ).aggregate(core, metricsCommon, metricsInfluxDb)
+    ).aggregate(core, cli, metricsCommon, metricsInfluxDb)
+
+  lazy val cli =  Project(
+    id = "cli",
+    base = file("cli"),
+    settings = commonSettings
+  ).dependsOn(core)
 
   lazy val core =  Project(
       id = "core",
