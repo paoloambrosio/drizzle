@@ -5,7 +5,6 @@ import java.time._
 import akka.testkit.{ImplicitSender, TestFSMRef, TestKit}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.runner.VUser._
-import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
 
@@ -25,6 +24,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     vuser ! Start(scenario(successful(f), successful(f)))
 
     expectMsg(VUser.Success)
+    // TODO check VUser terminated
     contexts shouldBe Seq((ic, f(ic)),(f(ic),f(f(ic))))
   }
 
@@ -36,7 +36,20 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     vuser ! Start(scenario(successful(f), failing(exception), successful()))
 
     expectMsg(VUser.Failure(exception))
+    // TODO check VUser terminated
     contexts shouldBe Seq((ic, f(ic)))
+  }
+
+  it should "stop when requested" in new TestContext {
+    vuser ! Start(scenario(async(), async()))
+
+    actionsExecuted shouldBe 0
+    advance()
+    vuser ! Stop
+
+    expectMsg(VUser.Success)
+    // TODO check VUser terminated
+    actionsExecuted shouldBe 1
   }
 
   it should "run async actions sequentially" in new TestContext {
@@ -48,17 +61,6 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     advance()
     expectMsg(VUser.Success)
     actionsExecuted shouldBe 2
-  }
-
-  it should "stop when requested" in new TestContext {
-    vuser ! Start(scenario(async(), async()))
-
-    actionsExecuted shouldBe 0
-    advance()
-    vuser ! Stop
-
-    expectMsg(VUser.Success)
-    actionsExecuted shouldBe 1
   }
 
   // HELPERS

@@ -11,6 +11,8 @@ object TestActorSystem {
                   |akka.loggers = ["akka.testkit.TestEventListener"]
                   |akka.stdout-loglevel = "OFF"
                   |akka.loglevel = "OFF"
+                  |akka.actor.default-dispatcher.type = "akka.testkit.CallingThreadDispatcherConfigurator"
+                  |akka.test.single-expect-default = 0
                   |""".stripMargin
 
   def apply(): ActorSystem = {

@@ -16,7 +16,7 @@ object VUser {
 
   sealed trait Data
   case object Uninitialized extends Data
-  final case class Initialised(runner: ActorRef, scenario: Scenario) extends Data
+  final case class Initialised(orchestrator: ActorRef, scenario: Scenario) extends Data
 
   // IN
   final case class Start(scenario: Scenario)
@@ -46,26 +46,26 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
 
   when(Idle) {
     case Event(Start(scenario: Scenario), Uninitialized) =>
-      val runner = sender()
+      val orchestrator = sender()
       self ! NextStep(initialContext)
-      goto(Running) using Initialised(runner, scenario)
+      goto(Running) using Initialised(orchestrator, scenario)
   }
 
   when(Running) {
     case Event(NextStep(context), s @ Initialised(_, Scenario(_, nextStep #:: rest))) =>
       execAction(nextStep, context)
       stay using s.copy(scenario = s.scenario.copy(steps = rest))
-    case Event(NextStep(context), Initialised(runner, _)) =>
+    case Event(NextStep(context), Initialised(_, _)) =>
       stop()
-    case Event(Stop, Initialised(runner, _)) =>
+    case Event(Stop, Initialised(_, _)) =>
       stop()
     case Event(Status.Failure(t), _) =>
       stop(FSM.Failure(t))
   }
 
   onTermination {
-    case StopEvent(FSM.Normal, state, Initialised(runner, _)) => runner ! Success
-    case StopEvent(FSM.Failure(cause: Throwable), state, Initialised(runner, _)) =>  runner ! Failure(cause)
+    case StopEvent(FSM.Normal, state, Initialised(orchestrator, _)) => orchestrator ! Success
+    case StopEvent(FSM.Failure(cause: Throwable), state, Initialised(orchestrator, _)) =>  orchestrator ! Failure(cause)
   }
 
   initialize()
