@@ -1,7 +1,10 @@
 package net.paoloambrosio.drizzle.runner
 
-import akka.actor.{FSM, ActorRef, Actor, Props}
+import java.time.{OffsetDateTime, Clock}
+
+import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
+import net.paoloambrosio.drizzle.metrics.SimulationMetrics
 
 object Orchestrator {
 
@@ -19,11 +22,14 @@ object Orchestrator {
   // OUT
   case object Finished // TODO track if the run was successful or not returning "stats"
 
-  def props(): Props = Props(new Orchestrator(VUser.props()))
+  def props(): Props = Props(new Orchestrator(Clock.systemUTC(), MetricsCollector.props(Seq.empty), VUser.props))
 
 }
 
-class Orchestrator(vuserProps: Props) extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
+class Orchestrator(clock: Clock,
+                   metricsProps: SimulationMetrics => Props,
+                   vuserProps: ActorRef => Props
+                  ) extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
 
   import Orchestrator._
 
@@ -32,7 +38,8 @@ class Orchestrator(vuserProps: Props) extends Actor with FSM[Orchestrator.State,
   when(Idle) {
     case Event(Start(scenarios), Uninitialized) =>
       val runner = sender()
-      val vusers = scenarios.map(startVUser(_))
+      val metricsCollector = newMetricsCollector()
+      val vusers = scenarios.map(startVUser(_, metricsCollector))
       actOn(runner, vusers)
   }
 
@@ -53,9 +60,14 @@ class Orchestrator(vuserProps: Props) extends Actor with FSM[Orchestrator.State,
     }
   }
 
-  private def startVUser(s: Scenario): ActorRef = {
-    val vuser = context.actorOf(vuserProps)
-    vuser ! VUser.Start(s)
+  private def newMetricsCollector(): ActorRef = {
+    val simulationMetrics = SimulationMetrics("", OffsetDateTime.now(clock))
+    context.actorOf(metricsProps(simulationMetrics))
+  }
+
+  private def startVUser(scenario: Scenario, metricsCollector: ActorRef): ActorRef = {
+    val vuser = context.actorOf(vuserProps(metricsCollector))
+    vuser ! VUser.Start(scenario)
     vuser
   }
 

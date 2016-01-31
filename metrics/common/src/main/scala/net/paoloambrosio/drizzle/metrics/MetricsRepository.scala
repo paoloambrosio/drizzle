@@ -10,5 +10,5 @@ trait MetricsRepository {
     * @param request Request metrics to store
     * @return
     */
-  def store(request: Request): Future[Unit]
+  def store(request: TimedActionMetrics): Future[Unit]
 }

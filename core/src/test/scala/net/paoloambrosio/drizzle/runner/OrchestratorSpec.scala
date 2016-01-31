@@ -1,8 +1,11 @@
 package net.paoloambrosio.drizzle.runner
 
+import java.time.Clock
+
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import net.paoloambrosio.drizzle.core.{Scenario, ScenarioStep}
+import net.paoloambrosio.drizzle.metrics.SimulationMetrics
 import net.paoloambrosio.drizzle.runner.Orchestrator._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
@@ -30,7 +33,8 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     orchestrator ! Start(scenarios)
 
-    startedVusers.size shouldBe scenarios.size
+    startedVusers.size shouldBe scenarios.size // one vuser per scenario
+    passedMetricsCollectors.size shouldBe 1    // one metrics collector
     expectNoMsg()
   }
 
@@ -51,20 +55,29 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
   // HELPERS
 
   trait TestContext {
-
     val SomeScenario = Scenario("", Stream.empty[ScenarioStep])
 
-    var startedVusers = Seq.empty[ActorRef]
+    var startedVusers = Set.empty[ActorRef]
+    var passedMetricsCollectors = Set.empty[ActorRef]
+
     def splitVusers() = startedVusers.splitAt(startedVusers.size/2)
 
-    val testVUserProps = Props(new Actor {
-      override def receive: Receive = {
-        case VUser.Start(_) => startedVusers +:= self
-      }
+    val testVUserProps = (mc: ActorRef) => {
+      passedMetricsCollectors += mc
+      Props(new Actor {
+        override def receive: Receive = {
+          case VUser.Start(_) =>
+            startedVusers += self
+        }
+      })
+    }
+
+    val testMetricsCollectorProps = (sm: SimulationMetrics) => Props(new Actor {
+      override def receive: Actor.Receive = ???
     })
 
     def actor() = {
-      TestActorRef(new Orchestrator(testVUserProps))
+      TestActorRef(new Orchestrator(Clock.systemUTC(), testMetricsCollectorProps, testVUserProps))
     }
   }
 

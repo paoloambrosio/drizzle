@@ -2,8 +2,11 @@ package net.paoloambrosio.drizzle.runner
 
 import java.time._
 
-import akka.testkit.{ImplicitSender, TestFSMRef, TestKit}
+import akka.actor.Actor
+import akka.actor.Actor.Receive
+import akka.testkit._
 import net.paoloambrosio.drizzle.core._
+import net.paoloambrosio.drizzle.metrics.{TimedActionMetrics, SimulationMetrics}
 import net.paoloambrosio.drizzle.runner.VUser._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
@@ -63,12 +66,26 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     actionsExecuted shouldBe 2
   }
 
+  it should "send metrics if elapsed time is not zero" in new TestContext {
+    vuser ! Start(scenario(
+      successful(changeTimers(elapsedTime = Duration.ZERO)),
+      successful(changeTimers(elapsedTime = Duration.ofMillis(4))),
+      successful(changeTimers(elapsedTime = Duration.ofNanos(123))),
+      successful(changeTimers(elapsedTime = Duration.ZERO))
+    ))
+
+    metricsSent.map(_.elapsedTime) shouldBe Seq(
+      Duration.ofMillis(4),
+      Duration.ofNanos(123)
+    )
+  }
+
   // HELPERS
 
   trait TestContext {
     implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
-    lazy val vuser = TestFSMRef(new VUser(clock), testActor)
+    lazy val vuser = TestFSMRef(new VUser(clock, metricsRecorder), testActor)
 
     def scenario(actions: ScenarioAction*) = {
       val steps = actions.map(ScenarioStep("step", _)).toStream
@@ -76,11 +93,9 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     }
 
     val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
+
     val initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
-    val incrementStartByASecond: ScenarioContext => ScenarioContext = { c =>
-      // It is worth introducing a lens library?
-      c.copy(lastAction = c.lastAction.copy(start = c.lastAction.start.plusSeconds(1)))
-    }
+    val incrementStartByASecond = changeTimers(start = Duration.ofSeconds(1))
 
     def successful(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
       Future.successful(f(c))
@@ -110,6 +125,20 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
       })
     }
     def actionsExecuted = contexts.length
+
+    var metricsSent = Seq.empty[TimedActionMetrics]
+    lazy val metricsRecorder = TestActorRef(new Actor {
+      override def receive: Receive = {
+        case m: TimedActionMetrics => metricsSent :+= m
+      }
+    })
+
+    def changeTimers(start: Duration = Duration.ZERO, elapsedTime: Duration = Duration.ZERO): ScenarioContext => ScenarioContext = { c =>
+      c.copy(lastAction = c.lastAction.copy(
+        start = c.lastAction.start.plus(start),
+        elapsedTime = elapsedTime
+      ))
+    }
   }
 
 }

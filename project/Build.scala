@@ -12,12 +12,13 @@ object BuildSettings {
 object Dependencies {
   val akkaV = "2.4.1"
 
-  val akkaActor   = "com.typesafe.akka" %% "akka-actor"   % akkaV
+  val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 
-  val scalaTest              = "org.scalatest"     %% "scalatest"                % "2.2.4"        % Test
-  val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"             % akkaV          % Test
-  val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"      % "0.4.0"        % Test
-  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest" % "0.4.0"        % Test
+  val scalaTest              = "org.scalatest"     %% "scalatest"                   % "2.2.4"        % Test
+  val scalaMock              = "org.scalamock"     %% "scalamock-scalatest-support" % "3.2"          % Test
+  val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"                % akkaV          % Test
+  val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"         % "0.4.0"        % Test
+  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.4.0"        % Test
 }
 
 object Resolvers {
@@ -36,7 +37,8 @@ object DrizzleBuild extends Build {
   val commonDeps = Seq(
     akkaActor,
     akkaTestkit,
-    scalaTest
+    scalaTest,
+    scalaMock
   )
 
   val commonSettings = buildSettings ++ Seq(
@@ -58,7 +60,7 @@ object DrizzleBuild extends Build {
           akkaMockScheduler
         )
       )
-    )
+    ).dependsOn(metricsCommon)
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
