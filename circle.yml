@@ -1,7 +1,10 @@
+general:
+  branches:
+    only:
+      - master
 machine:
   java:
     version:
       oraclejdk8
   services:
     - docker
-
