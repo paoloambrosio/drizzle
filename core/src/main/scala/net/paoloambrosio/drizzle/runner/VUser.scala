@@ -5,7 +5,7 @@ import java.time.{Clock, Duration, OffsetDateTime}
 import akka.actor._
 import akka.pattern.pipe
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.metrics.{TimedActionMetrics, SimulationMetrics}
+import net.paoloambrosio.drizzle.metrics.TimedActionMetrics
 
 import scala.concurrent.ExecutionContext
 
@@ -33,10 +33,9 @@ object VUser {
     *
     * @return a Props for creating a VUser
     */
-  def props: ActorRef => Props = metricsCollector => Props(
+  def props(metricsCollector: ActorRef) = Props(
     new VUser(Clock.systemUTC(), metricsCollector)
   )
-
 }
 
 class VUser(clock: Clock, metricsCollector: ActorRef) extends Actor with FSM[VUser.State, VUser.Data] {
@@ -77,13 +76,15 @@ class VUser(clock: Clock, metricsCollector: ActorRef) extends Actor with FSM[VUs
 
   private def execAction(step: ScenarioStep, beginContext: ScenarioContext) = {
     step.action(beginContext) map { endContext =>
-      sendMetrics(endContext.lastAction)
+      sendMetrics(step.name, endContext.lastAction)
       NextStep(endContext)
     } pipeTo self
   }
 
-  private def sendMetrics(timers: ActionTimers) = {
-    if (!timers.elapsedTime.isZero)
-      metricsCollector ! TimedActionMetrics(null, null, null, timers.elapsedTime)
+  private def sendMetrics(stepName: Option[String], timers: ActionTimers) = stepName match {
+    case Some(_) =>
+      val metrics = TimedActionMetrics(null, null, null, timers.start, timers.elapsedTime) // TODO
+      metricsCollector ! metrics
+    case _ =>
   }
 }

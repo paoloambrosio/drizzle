@@ -4,7 +4,6 @@ import java.time.{OffsetDateTime, Clock}
 
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.metrics.SimulationMetrics
 
 object Orchestrator {
 
@@ -27,7 +26,7 @@ object Orchestrator {
 }
 
 class Orchestrator(clock: Clock,
-                   metricsProps: SimulationMetrics => Props,
+                   metricsProps: Props,
                    vuserProps: ActorRef => Props
                   ) extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
 
@@ -39,7 +38,7 @@ class Orchestrator(clock: Clock,
     case Event(Start(scenarios), Uninitialized) =>
       val runner = sender()
       val metricsCollector = newMetricsCollector()
-      val vusers = scenarios.map(startVUser(_, metricsCollector))
+      val vusers = scenarios.map(startNewVUser(_, metricsCollector))
       actOn(runner, vusers)
   }
 
@@ -61,11 +60,10 @@ class Orchestrator(clock: Clock,
   }
 
   private def newMetricsCollector(): ActorRef = {
-    val simulationMetrics = SimulationMetrics("", OffsetDateTime.now(clock))
-    context.actorOf(metricsProps(simulationMetrics))
+    context.actorOf(metricsProps)
   }
 
-  private def startVUser(scenario: Scenario, metricsCollector: ActorRef): ActorRef = {
+  private def startNewVUser(scenario: Scenario, metricsCollector: ActorRef): ActorRef = {
     val vuser = context.actorOf(vuserProps(metricsCollector))
     vuser ! VUser.Start(scenario)
     vuser

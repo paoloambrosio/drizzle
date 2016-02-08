@@ -3,7 +3,7 @@ package net.paoloambrosio.drizzle.runner
 import java.time._
 
 import akka.testkit.{TestActorRef, TestKit}
-import net.paoloambrosio.drizzle.metrics.{SimulationMetrics, MetricsRepository}
+import net.paoloambrosio.drizzle.metrics.{MetricsRepository, TimedActionMetrics}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
@@ -15,23 +15,24 @@ class MetricsCollectorSpec extends TestKit(TestActorSystem())
     TestKit.shutdownActorSystem(system)
   }
 
-  it should "do stuff" in new TestContext {
+  it should "pass metrics to all repositories" in new TestContext {
     val metricsCollector = actor()
-    val simulationStart = OffsetDateTime.now()
-    val vuserRelStart = Duration.ofSeconds(12)
-    val actionRelStart = Duration.ofMillis(34)
+    mockMetricsRepositories.foreach { m =>
+      (m.store _).expects(metrics).once()
+    }
 
-    // This should just write stuff to the repositories! No logic!
+    metricsCollector ! metrics
   }
 
   // HELPERS
 
   trait TestContext {
-    val mockMetricsRepository = mock[MetricsRepository]
-    val simulationMetrics = SimulationMetrics("", OffsetDateTime.now())
+    val mockMetricsRepositories = Seq.fill(3)(mock[MetricsRepository])
+
+    val metrics = TimedActionMetrics(null, null, null, OffsetDateTime.now(), Duration.ofMillis(34))
 
     def actor() = {
-      TestActorRef(new MetricsCollector(Seq(mockMetricsRepository), simulationMetrics))
+      TestActorRef(new MetricsCollector(mockMetricsRepositories))
     }
   }
 

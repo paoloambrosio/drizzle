@@ -28,7 +28,7 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
   }
 
   private def initialDelayStep(startDelay: Duration) = {
-    ScenarioStep("", thinkTime(startDelay))
+    ScenarioStep(None, thinkTime(startDelay))
   }
 
 }

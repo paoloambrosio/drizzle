@@ -1,11 +1,12 @@
 package net.paoloambrosio.drizzle.metrics.influxdb
 
 import java.time.format.DateTimeFormatter
-import java.time.{OffsetDateTime => jOffsetDateTime, ZoneOffset}
+import java.time.{OffsetDateTime => jOffsetDateTime, Duration => jDuration, ZoneOffset}
 
 import com.paulgoldbaum.influxdbclient.{Database, InfluxDB}
 import common._
 import net.paoloambrosio.drizzle.metrics._
+import net.paoloambrosio.drizzle.metrics.influxdb.InfluxDbMetrics._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -30,26 +31,30 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
   lazy val influxDbMetrics = new InfluxDbMetrics(metricsDb)
 
   it should "write metrics for a single request" in {
-    val run = SimulationMetrics("runIdX", absoluteStart = simulationRunStart)
-    val vUser = VUserMetrics(run, "vUserIdY", start = 3 seconds)
-    val request = TimedActionMetrics(vUser, "requestIdZ", start = 7 seconds, elapsedTime = 13 micros)
+    val metrics = TimedActionMetrics(
+      simulation = RuntimeInfo("simulation", "runIdX"),
+      vuser = RuntimeInfo("vuser", "vuserIdY"),
+      action = RuntimeInfo("action", "requestIdZ"),
+      start = simulationRunStart,
+      elapsedTime = 13 micros)
 
-    val x = influxDbMetrics.store(request).futureValue
+    val x = influxDbMetrics.store(metrics).futureValue
 
-    val response = metricsDb.query("SELECT runId,vUserId,requestId,elapsedTime FROM action").futureValue
+    val response = metricsDb.query(s"SELECT * FROM $ActionType").futureValue
     val result = response.series.head
-    parseTimes(result.points(0)) shouldBe requestsStart(request)
-    result.points(1) shouldBe List(run.id)
-    result.points(2) shouldBe List(vUser.id)
-    result.points(3) shouldBe List(request.id)
-    result.points(4) shouldBe requestsResponseTime(request)
+    parseTimes(result.points(0)) shouldBe List(metrics.start)
+    result.points(ActionIdField) shouldBe List(metrics.action.id)
+    result.points(ActionNameField) shouldBe List(metrics.action.name)
+    result.points(VUserIdField) shouldBe List(metrics.vuser.id)
+    result.points(VUserNameField) shouldBe List(metrics.vuser.name)
+    result.points(SimulationIdField) shouldBe List(metrics.simulation.id)
+    result.points(SimulationNameField) shouldBe List(metrics.simulation.name)
+    result.points(ElapsedTimeField) shouldBe List(micros(metrics.elapsedTime))
   }
 
   private def parseTimes(values: List[Any]) = values map (v => parseTime(v.toString))
   private def parseTime(value: String) = jOffsetDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME).withOffsetSameInstant(TIME_OFFSET)
-
-  private def requestsStart(requests: TimedActionMetrics*) = requests map (_.absoluteStart)
-  private def requestsResponseTime(requests: TimedActionMetrics*) = requests map (_.elapsedTime.getNano / 1000)
+  private def micros(d: jDuration) = d.toNanos / 1000
 
   // InfluxDB seems to ignore in queries data points that are less than 30 seconds in the past
   private val simulationRunStart = jOffsetDateTime.now().minus(5 minutes).withOffsetSameInstant(TIME_OFFSET)

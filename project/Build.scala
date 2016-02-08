@@ -73,7 +73,7 @@ object DrizzleBuild extends Build {
       base = file("metrics/influxdb"),
       settings = commonSettings ++ dockerTestKitSettings ++ Seq(
         libraryDependencies ++= Seq(
-          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.0"
+          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.1"
         )
       )
     ).dependsOn(metricsCommon)

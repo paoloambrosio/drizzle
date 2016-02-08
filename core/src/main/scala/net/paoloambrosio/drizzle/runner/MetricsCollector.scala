@@ -1,12 +1,11 @@
 package net.paoloambrosio.drizzle.runner
 
 import akka.actor.{Actor, Props}
-import net.paoloambrosio.drizzle.metrics.{SimulationMetrics, MetricsRepository}
+import net.paoloambrosio.drizzle.metrics.{TimedActionMetrics, MetricsRepository}
 
 object MetricsCollector {
 
-  def props(repositories: Seq[MetricsRepository])(simulationMetrics: SimulationMetrics): Props =
-    Props(new MetricsCollector(repositories, simulationMetrics))
+  def props(repositories: Seq[MetricsRepository]) = Props(new MetricsCollector(repositories))
 }
 
 /**
@@ -14,8 +13,11 @@ object MetricsCollector {
   *
   * @param repositories
   */
-class MetricsCollector(repositories: Seq[MetricsRepository], simulationMetrics: SimulationMetrics) extends Actor {
+class MetricsCollector(repositories: Seq[MetricsRepository]) extends Actor {
 
-  override def receive: Receive = ??? // HOW ARE WE GOING TO HANDLE ASYNC WRITES?
+  // TODO How are we going to handle async writes?
+  override def receive: Receive = {
+    case t: TimedActionMetrics => repositories.foreach(_.store(t))
+  }
 
 }

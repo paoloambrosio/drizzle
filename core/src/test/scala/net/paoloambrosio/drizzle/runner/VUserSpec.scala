@@ -3,10 +3,9 @@ package net.paoloambrosio.drizzle.runner
 import java.time._
 
 import akka.actor.Actor
-import akka.actor.Actor.Receive
 import akka.testkit._
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.metrics.{TimedActionMetrics, SimulationMetrics}
+import net.paoloambrosio.drizzle.metrics.TimedActionMetrics
 import net.paoloambrosio.drizzle.runner.VUser._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
@@ -66,17 +65,15 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     actionsExecuted shouldBe 2
   }
 
-  it should "send metrics if elapsed time is not zero" in new TestContext {
-    vuser ! Start(scenario(
-      successful(changeTimers(elapsedTime = Duration.ZERO)),
-      successful(changeTimers(elapsedTime = Duration.ofMillis(4))),
-      successful(changeTimers(elapsedTime = Duration.ofNanos(123))),
-      successful(changeTimers(elapsedTime = Duration.ZERO))
-    ))
+  it should "send metrics if step name present" in new TestContext {
+    vuser ! Start(Scenario("sc1", Stream(
+      ScenarioStep(None, successful(changeTimers(elapsedTime = Duration.ofMillis(123)))),
+      ScenarioStep(Some("st2"), successful(changeTimers(elapsedTime = Duration.ofNanos(456)))),
+      ScenarioStep(None, successful(changeTimers(elapsedTime = Duration.ofNanos(789))))
+    )))
 
-    metricsSent.map(_.elapsedTime) shouldBe Seq(
-      Duration.ofMillis(4),
-      Duration.ofNanos(123)
+    metricsSent.map(m => (m.start, m.elapsedTime)) shouldBe Seq(
+      (testStartTime, Duration.ofNanos(456))
     )
   }
 
@@ -88,13 +85,14 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     lazy val vuser = TestFSMRef(new VUser(clock, metricsRecorder), testActor)
 
     def scenario(actions: ScenarioAction*) = {
-      val steps = actions.map(ScenarioStep("step", _)).toStream
+      val steps = actions.map(ScenarioStep(None, _)).toStream
       Scenario("scenario", steps)
     }
 
     val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
 
-    val initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
+    val testStartTime = OffsetDateTime.now(clock)
+    val initialContext = ScenarioContext(ActionTimers(testStartTime, Duration.ZERO))
     val incrementStartByASecond = changeTimers(start = Duration.ofSeconds(1))
 
     def successful(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
