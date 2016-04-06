@@ -1,9 +1,7 @@
 package net.paoloambrosio.drizzle.metrics.influxdb
 
 import java.time.format.DateTimeFormatter
-import java.time.{OffsetDateTime => jOffsetDateTime}
-
-import scala.concurrent.duration._
+import java.time.{OffsetDateTime => jOffsetDateTime, ZoneOffset}
 
 import com.paulgoldbaum.influxdbclient.{Database, InfluxDB}
 import common._
@@ -11,12 +9,16 @@ import net.paoloambrosio.drizzle.metrics._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.duration._
+
 class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with UnixFallbackDockerTestKit
   with DockerInfluxDBService {
 
   lazy val influxDbHost = docker.host
   lazy val influxDbPort = influxdbContainer.getPorts().futureValue.apply(InfluxDBAPI)
   lazy val influxdb = InfluxDB.connect(influxDbHost, influxDbPort)
+
+  private val TIME_OFFSET = ZoneOffset.ofHoursMinutes(2, 30)
 
   lazy val metricsDb: Database = {
     val dbName = randomAlphaNumeric(10)
@@ -44,11 +46,11 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
   }
 
   private def parseTimes(values: List[Any]) = values map (v => parseTime(v.toString))
-  private def parseTime(value: String) = jOffsetDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME)
+  private def parseTime(value: String) = jOffsetDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME).withOffsetSameInstant(TIME_OFFSET)
 
   private def requestsStart(requests: Request*) = requests map (_.absoluteStart)
   private def requestsResponseTime(requests: Request*) = requests map (_.responseTime.getNano / 1000)
 
   // InfluxDB seems to ignore in queries data points that are less than 30 seconds in the past
-  private val simulationRunStart = jOffsetDateTime.now().minus(5 minutes)
+  private val simulationRunStart = jOffsetDateTime.now().minus(5 minutes).withOffsetSameInstant(TIME_OFFSET)
 }
