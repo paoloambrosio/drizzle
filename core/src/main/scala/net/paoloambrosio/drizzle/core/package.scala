@@ -10,7 +10,7 @@ package object core {
 
   case class ActionTimers(start: OffsetDateTime, elapsedTime: Duration)
 
-  case class ScenarioContext(lastAction: ActionTimers, sessionVariables: SessionVariables = ())
+  case class ScenarioContext(latestAction: Option[ActionTimers] = None, sessionVariables: SessionVariables = ())
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext]
 
