@@ -5,6 +5,7 @@ import java.time.Clock
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.metrics.{RuntimeInfo, TimedActionMetrics}
+import net.paoloambrosio.drizzle.runner.MetricsWriter.VUserMetrics
 
 object Orchestrator {
 
@@ -78,14 +79,9 @@ class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: P
   }
 
   private def sendMetrics(at: ActionTimers): Unit = {
+    val todoRuntimeInfo = RuntimeInfo(None,"")
     metricsCollectors.foreach { mc =>
-      mc ! TimedActionMetrics(
-        RuntimeInfo("TODO",""),
-        RuntimeInfo("TODO",""),
-        RuntimeInfo("TODO",""),
-        at.start,
-        at.elapsedTime
-      )
+      mc ! VUserMetrics(at.start, at.elapsedTime)
     }
   }
 

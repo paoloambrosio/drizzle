@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.metrics.TimedActionMetrics
+import net.paoloambrosio.drizzle.runner.MetricsWriter.VUserMetrics
 import net.paoloambrosio.drizzle.runner.Orchestrator._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
@@ -69,9 +70,9 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     executeStepChain(startedVusers.head)
     collectors.foreach { mc => {
-      expectExportedMetrics(mc, start, 1 milli)
-      expectExportedMetrics(mc, start.plusSeconds(4), 2 milli)
-      expectExportedMetrics(mc, start.plusSeconds(7), 3 milli)
+      mc.expectMsg(VUserMetrics(start, 1 milli))
+      mc.expectMsg(VUserMetrics(start.plusSeconds(4), 2 milli))
+      mc.expectMsg(VUserMetrics(start.plusSeconds(7), 3 milli))
     }}
   }
 
@@ -106,14 +107,6 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     def executeStepChain(vu: StartedVUser) = {
       vu.steps.foreach { ss => ss.action(ScenarioContext()).value.get.get } // FIXME
-    }
-
-    def expectExportedMetrics(testProbe: TestProbe, start: OffsetDateTime, elapsedTime: jDuration) = {
-      testProbe.expectMsgPF() {
-        case msg: TimedActionMetrics =>
-          msg.start shouldBe start
-          msg.elapsedTime shouldBe elapsedTime
-      }
     }
   }
 

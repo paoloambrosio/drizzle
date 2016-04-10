@@ -32,9 +32,9 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
 
   it should "write metrics for a single request" in {
     val metrics = TimedActionMetrics(
-      simulation = RuntimeInfo("simulation", "runIdX"),
-      vuser = RuntimeInfo("vuser", "vuserIdY"),
-      action = RuntimeInfo("action", "requestIdZ"),
+      simulation = RuntimeInfo(Some("simulation"), "runIdX"),
+      vuser = RuntimeInfo(Some("vuser"), "vuserIdY"),
+      action = RuntimeInfo(Some("action"), "requestIdZ"),
       start = simulationRunStart,
       elapsedTime = 13 micros)
 
@@ -44,11 +44,11 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
     val result = response.series.head
     parseTimes(result.points(0)) shouldBe List(metrics.start)
     result.points(ActionIdField) shouldBe List(metrics.action.id)
-    result.points(ActionNameField) shouldBe List(metrics.action.name)
+    result.points(ActionNameField) shouldBe List(metrics.action.name.get)
     result.points(VUserIdField) shouldBe List(metrics.vuser.id)
-    result.points(VUserNameField) shouldBe List(metrics.vuser.name)
+    result.points(VUserNameField) shouldBe List(metrics.vuser.name.get)
     result.points(SimulationIdField) shouldBe List(metrics.simulation.id)
-    result.points(SimulationNameField) shouldBe List(metrics.simulation.name)
+    result.points(SimulationNameField) shouldBe List(metrics.simulation.name.get)
     result.points(ElapsedTimeField) shouldBe List(micros(metrics.elapsedTime))
   }
 

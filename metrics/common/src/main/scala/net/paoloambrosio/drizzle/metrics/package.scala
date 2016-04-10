@@ -4,7 +4,7 @@ import java.time._
 
 package object metrics {
 
-  case class RuntimeInfo(name: String,  id: String)
+  case class RuntimeInfo(name: Option[String],  id: String)
 
   /**
     * Metrics for a single timed action from a VUser.

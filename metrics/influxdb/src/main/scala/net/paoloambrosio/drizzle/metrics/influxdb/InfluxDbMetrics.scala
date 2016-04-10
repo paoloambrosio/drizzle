@@ -1,9 +1,9 @@
 package net.paoloambrosio.drizzle.metrics.influxdb
 
-import java.time.{ZoneOffset, OffsetDateTime}
+import java.time.{OffsetDateTime, ZoneOffset}
 
-import com.paulgoldbaum.influxdbclient.{Point, Database}
-import net.paoloambrosio.drizzle.metrics.{TimedActionMetrics, MetricsRepository}
+import com.paulgoldbaum.influxdbclient.{Database, Point}
+import net.paoloambrosio.drizzle.metrics.{MetricsRepository, RuntimeInfo, TimedActionMetrics}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,8 +39,12 @@ class InfluxDbMetrics(metricsDb: Database)(implicit ec: ExecutionContext) extend
     metricsDb.write(point) map { _ => () }
   }
 
-  def toNanoTimestamp(dateTime: OffsetDateTime) = {
+  private def toNanoTimestamp(dateTime: OffsetDateTime) = {
     val utc = dateTime.atZoneSameInstant(ZoneOffset.UTC)
     utc.toEpochSecond * S_IN_NS + utc.getNano.toLong
+  }
+
+  implicit class RichPoint(self: Point) {
+    def addTag[T](key: String, value: Option[String]): Point = if (value.isDefined) self.addTag(key, value.get) else self
   }
 }
