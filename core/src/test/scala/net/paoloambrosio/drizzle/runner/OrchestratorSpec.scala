@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.metrics.TimedActionMetrics
-import net.paoloambrosio.drizzle.runner.MetricsWriter.VUserMetrics
+import net.paoloambrosio.drizzle.runner.MetricsWriter.{VUserMetrics, VUserStarted, VUserStopped}
 import net.paoloambrosio.drizzle.runner.Orchestrator._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
@@ -55,9 +55,31 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
     expectMsg(Finished)
   }
 
+  it should "send vuser started and stopped events to listeners" in new TestContext {
+    filterStatusEvents()
+    val orchestrator = actor()
+    val scenarios = Seq.fill(3)(SomeScenario())
+
+    orchestrator ! Start(scenarios)
+
+    eventListeners.foreach { el =>
+      startedVuserRefs.foreach { vu =>
+        el.expectMsg(VUserStarted)
+      }
+    }
+
+    startedVuserRefs.foreach(orchestrator.tell(VUser.Success, _))
+
+    eventListeners.foreach { el =>
+      startedVuserRefs.foreach { vu =>
+        el.expectMsg(VUserStopped)
+      }
+    }
+  }
+
   it should "pass metrics to collectors when actions are run in vusers" in new TestContext {
-    val collectors = Seq(TestProbe(), TestProbe(), TestProbe())
-    val orchestrator = actor(collectors.map(_.ref))
+    filterMetricsEvents()
+    val orchestrator = actor()
     val start = OffsetDateTime.now()
     val scenario = Seq(SomeScenario(
       outputTimers(start, 1 milli),
@@ -67,12 +89,12 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
     ))
 
     orchestrator ! Start(scenario)
-
     executeStepChain(startedVusers.head)
-    collectors.foreach { mc => {
-      mc.expectMsg(VUserMetrics(start, 1 milli))
-      mc.expectMsg(VUserMetrics(start.plusSeconds(4), 2 milli))
-      mc.expectMsg(VUserMetrics(start.plusSeconds(7), 3 milli))
+
+    eventListeners.foreach { el => {
+      el.expectMsg(VUserMetrics(start, 1 milli))
+      el.expectMsg(VUserMetrics(start.plusSeconds(4), 2 milli))
+      el.expectMsg(VUserMetrics(start.plusSeconds(7), 3 milli))
     }}
   }
 
@@ -91,8 +113,9 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     case class StartedVUser(ref: ActorRef, steps: Stream[ScenarioStep])
     var startedVusers = Set.empty[StartedVUser]
+    def startedVuserRefs = startedVusers.map(_.ref)
 
-    def splitVuserRefs() = startedVusers.map(_.ref).splitAt(startedVusers.size/2)
+    def splitVuserRefs() = startedVuserRefs.splitAt(startedVusers.size/2)
 
     val testVUserProps = Props(new Actor {
       override def receive: Receive = {
@@ -101,13 +124,26 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
       }
     })
 
-    def actor(metricsCollectors: Seq[ActorRef] = Seq.empty) = {
-      TestActorRef(new Orchestrator(Clock.systemUTC(), metricsCollectors, testVUserProps))
+    lazy val eventListeners = Seq(TestProbe(), TestProbe(), TestProbe())
+
+    def actor() = {
+      TestActorRef(new Orchestrator(Clock.systemUTC(), eventListeners.map(_.ref), testVUserProps))
     }
 
     def executeStepChain(vu: StartedVUser) = {
       vu.steps.foreach { ss => ss.action(ScenarioContext()).value.get.get } // FIXME
     }
+
+    def filterMetricsEvents() = eventListeners.foreach(_.ignoreMsg {
+      case VUserMetrics(_, _) => false
+      case _ => true
+    })
+
+    def filterStatusEvents() = eventListeners.foreach(_.ignoreMsg {
+      case VUserMetrics(_, _) => true
+      case _ => false
+    })
+
   }
 
 }

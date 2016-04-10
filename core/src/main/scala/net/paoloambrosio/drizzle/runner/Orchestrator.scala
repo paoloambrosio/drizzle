@@ -5,7 +5,7 @@ import java.time.Clock
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.metrics.{RuntimeInfo, TimedActionMetrics}
-import net.paoloambrosio.drizzle.runner.MetricsWriter.VUserMetrics
+import net.paoloambrosio.drizzle.runner.MetricsWriter._
 
 object Orchestrator {
 
@@ -23,16 +23,18 @@ object Orchestrator {
   // OUT
   case object Finished // TODO track if the run was successful or not returning "stats"
 
-  def props(metricsCollectors: Seq[ActorRef]): Props = Props(
-    new Orchestrator(Clock.systemUTC(), metricsCollectors, VUser.props)
+  def props(eventListeners: Seq[ActorRef]): Props = Props(
+    new Orchestrator(Clock.systemUTC(), eventListeners, VUser.props)
   )
 
 }
 
-class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: Props)
+class Orchestrator(clock: Clock, eventListeners: Seq[ActorRef], vuserProps: Props)
     extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
 
   import Orchestrator._
+
+  implicit val executor = context.dispatcher
 
   startWith(Idle, Uninitialized)
 
@@ -45,6 +47,7 @@ class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: P
 
   when(Running) {
     case Event(VUser.Success | VUser.Failure(_), Initialised(runner, vusers)) =>
+      fireEvent(VUserStopped)
       val vusersLeft = vusers.filterNot(_ == sender())
       updateState(runner, vusersLeft)
   }
@@ -63,6 +66,7 @@ class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: P
   private def startNewVUser(scenario: Scenario): ActorRef = {
     val vuser = context.actorOf(vuserProps)
     vuser ! VUser.Start(wrapStepsSendingMetrics(scenario.steps))
+    fireEvent(VUserStarted)
     vuser
   }
 
@@ -71,7 +75,6 @@ class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: P
   }
 
   private def wrapActionSendingMetrics(action: ScenarioAction): ScenarioAction = in => {
-    implicit val executor = context.dispatcher // FIXME?
     action(in) map { out => out.latestAction match {
       case Some(at) => sendMetrics(at); out
       case None => out
@@ -79,10 +82,11 @@ class Orchestrator(clock: Clock, metricsCollectors: Seq[ActorRef], vuserProps: P
   }
 
   private def sendMetrics(at: ActionTimers): Unit = {
-    val todoRuntimeInfo = RuntimeInfo(None,"")
-    metricsCollectors.foreach { mc =>
-      mc ! VUserMetrics(at.start, at.elapsedTime)
-    }
+    fireEvent(VUserMetrics(at.start, at.elapsedTime))
+  }
+
+  private def fireEvent(event: Any): Unit = {
+    eventListeners.foreach(_ ! event)
   }
 
 }

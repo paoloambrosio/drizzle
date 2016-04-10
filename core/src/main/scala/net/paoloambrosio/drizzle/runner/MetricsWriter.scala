@@ -7,6 +7,8 @@ import net.paoloambrosio.drizzle.metrics.{MetricsRepository, RuntimeInfo, TimedA
 
 object MetricsWriter {
 
+  case object VUserStarted
+  case object VUserStopped
   case class VUserMetrics(start: OffsetDateTime, elapsedTime: Duration)
 
   def props(repository: MetricsRepository) = Props(new MetricsWriter(repository))
