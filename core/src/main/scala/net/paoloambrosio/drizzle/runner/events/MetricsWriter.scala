@@ -1,4 +1,4 @@
-package net.paoloambrosio.drizzle.runner
+package net.paoloambrosio.drizzle.runner.events
 
 import java.time.{Duration, OffsetDateTime}
 
@@ -6,10 +6,6 @@ import akka.actor.{Actor, Props}
 import net.paoloambrosio.drizzle.metrics.{MetricsRepository, RuntimeInfo, TimedActionMetrics}
 
 object MetricsWriter {
-
-  case object VUserStarted
-  case object VUserStopped
-  case class VUserMetrics(start: OffsetDateTime, elapsedTime: Duration)
 
   def props(repository: MetricsRepository) = Props(new MetricsWriter(repository))
 }

@@ -15,7 +15,7 @@ object Dependencies {
   val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 
   val scalaTest              = "org.scalatest"     %% "scalatest"                   % "2.2.6"        % Test
-  val scalaMock              = "org.scalamock"     %% "scalamock-scalatest-support" % "3.2.2"        % Test
+  val mockito                = "org.mockito"       %  "mockito-core"                % "1.10.19"      % Test
   val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"                % akkaV          % Test
   val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"         % "0.4.0"        % Test
   val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.6.1"        % Test
@@ -38,7 +38,7 @@ object DrizzleBuild extends Build {
     akkaActor,
     akkaTestkit,
     scalaTest,
-    scalaMock
+    mockito
   )
 
   val commonSettings = buildSettings ++ Seq(
