@@ -3,8 +3,14 @@ package net.paoloambrosio.drizzle.core
 import java.time.Duration
 
 import net.paoloambrosio.drizzle.core.action.SleepActionFactory
+import net.paoloambrosio.drizzle.core.events.VUserEventSource
+
+import scala.concurrent.ExecutionContext
 
 trait ScenarioStreamFactory { this: SleepActionFactory =>
+
+  def vUserEventSource: VUserEventSource
+  implicit def ec: ExecutionContext
 
   /**
     * Converts a sequence of scenario profiles in a sequence of single
@@ -19,7 +25,7 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
 
   private def scenarioStream(sp: ScenarioProfile): Seq[Scenario] = {
     startDelays(sp.loadProfile).map(startDelay => {
-      sp.scenario.copy(steps = initialDelayStep(startDelay) +: sp.scenario.steps)
+      sp.scenario.copy(steps = initialDelayStep(startDelay) +: wrapSendingMetrics(sp.scenario.steps))
     })
   }
 
@@ -28,7 +34,23 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
   }
 
   private def initialDelayStep(startDelay: Duration) = {
-    ScenarioStep("", thinkTime(startDelay))
+    ScenarioStep(None, initialDelayAction(startDelay))
+  }
+
+  private def initialDelayAction(startDelay: Duration) = thinkTime(startDelay) andThen { out =>
+    out.onComplete(v => vUserEventSource.fireVUserStarted())
+    out
+  }
+
+  private def wrapSendingMetrics(steps: Stream[ScenarioStep]) = steps.map { s =>
+    s.copy(action = wrapActionSendingMetrics(s.action))
+  }
+
+  private def wrapActionSendingMetrics(action: ScenarioAction) = action andThen { out =>
+    out.onSuccess {
+      case ScenarioContext(Some(at), _) => vUserEventSource.fireVUserMetrics(at)
+    }
+    out
   }
 
 }

@@ -1,7 +1,10 @@
 package net.paoloambrosio.drizzle.runner
 
-import akka.actor.{FSM, ActorRef, Actor, Props}
+import java.time.Clock
+
+import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
+import net.paoloambrosio.drizzle.core.events.VUserEventSource
 
 object Orchestrator {
 
@@ -19,32 +22,36 @@ object Orchestrator {
   // OUT
   case object Finished // TODO track if the run was successful or not returning "stats"
 
-  def props(): Props = Props(new Orchestrator(VUser.props()))
+  def props(vUserEventSource: VUserEventSource): Props = Props(new Orchestrator(Clock.systemUTC(), VUser.props, vUserEventSource))
 
 }
 
-class Orchestrator(vuserProps: Props) extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
+class Orchestrator(clock: Clock, vuserProps: Props, vUserEventSource: VUserEventSource)
+    extends Actor with FSM[Orchestrator.State, Orchestrator.Data] {
 
   import Orchestrator._
+
+  implicit val executor = context.dispatcher
 
   startWith(Idle, Uninitialized)
 
   when(Idle) {
     case Event(Start(scenarios), Uninitialized) =>
       val runner = sender()
-      val vusers = scenarios.map(startVUser(_))
-      actOn(runner, vusers)
+      val vusers = scenarios.map(startNewVUser(_))
+      updateState(runner, vusers)
   }
 
   when(Running) {
     case Event(VUser.Success | VUser.Failure(_), Initialised(runner, vusers)) =>
+      vUserEventSource.fireVUserTerminated()
       val vusersLeft = vusers.filterNot(_ == sender())
-      actOn(runner, vusersLeft)
+      updateState(runner, vusersLeft)
   }
 
   initialize()
 
-  private def actOn(runner: ActorRef, vusers: Seq[ActorRef]) = {
+  private def updateState(runner: ActorRef, vusers: Seq[ActorRef]) = {
     if (vusers.isEmpty) {
       runner ! Finished
       stop(FSM.Normal, Uninitialized)
@@ -53,9 +60,10 @@ class Orchestrator(vuserProps: Props) extends Actor with FSM[Orchestrator.State,
     }
   }
 
-  private def startVUser(s: Scenario): ActorRef = {
+  private def startNewVUser(scenario: Scenario): ActorRef = {
     val vuser = context.actorOf(vuserProps)
-    vuser ! VUser.Start(s)
+    vUserEventSource.fireVUserCreated()
+    vuser ! VUser.Start(scenario.steps)
     vuser
   }
 

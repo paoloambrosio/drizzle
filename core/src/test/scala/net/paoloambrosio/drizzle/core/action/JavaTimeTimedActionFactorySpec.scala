@@ -15,7 +15,7 @@ class JavaTimeTimedActionFactorySpec extends FlatSpec
   "timedAction" should "record start and elapsed times" in new TestContext {
     val action = timedAction(sessionVariables => Future.successful(sessionVariables))
 
-    val returnedTimers = action(passedContext).futureValue.lastAction
+    val returnedTimers = action(passedContext).futureValue.latestAction.get
 
     returnedTimers.start shouldBe OffsetDateTime.now(t1clock)
     returnedTimers.elapsedTime.toNanos should be > 0L
@@ -33,7 +33,7 @@ class JavaTimeTimedActionFactorySpec extends FlatSpec
     private val t0clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
     val t1clock: Clock = Clock.offset(t0clock, Duration.ofSeconds(2))
 
-    def passedContext = ScenarioContext(ActionTimers(OffsetDateTime.now(t0clock), Duration.ZERO))
+    def passedContext = ScenarioContext(Some(ActionTimers(OffsetDateTime.now(t0clock), Duration.ZERO)))
   }
 
 }

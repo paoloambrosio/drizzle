@@ -26,12 +26,13 @@ class AkkaSchedulerSleepActionFactorySpec extends FlatSpec with Matchers {
     time.advance(expectedDelay - smallDuration)
     ret.value shouldBe None
     time.advance(smallDuration)
-    ret.value shouldBe Some(Success(passedContext))
+    ret.value shouldBe Some(Success(contextWithNoTimers))
   }
 
   "pacing" should "delay next step from start of previous action" in new TestContext {
+    val elapsedTime = someDuration / 2
     val passedContext = contextWithElapsedTime(someDuration / 2)
-    val expectedDelay = someDuration - passedContext.lastAction.elapsedTime
+    val expectedDelay = someDuration - elapsedTime
 
     val action = pacing(someDuration)
     val ret = action(passedContext)
@@ -40,16 +41,24 @@ class AkkaSchedulerSleepActionFactorySpec extends FlatSpec with Matchers {
     time.advance(expectedDelay - smallDuration)
     ret.value shouldBe None
     time.advance(smallDuration)
-    ret.value shouldBe Some(Success(passedContext))
+    ret.value shouldBe Some(Success(contextWithNoTimers))
   }
 
   it should "not delay next step if previous action took longer than pacing" in new TestContext {
     val action = pacing(someDuration)
-    val context = contextWithElapsedTime(someDuration)
-    val ret = action(context)
+    val passedContext = contextWithElapsedTime(someDuration)
+    val ret = action(passedContext)
 
-    ret.value shouldBe Some(Success(context))
+    ret.value shouldBe Some(Success(contextWithNoTimers))
   }
+
+  it should "not delay next step if previous action has no timers" in new TestContext {
+    val action = pacing(someDuration)
+    val ret = action(contextWithNoTimers)
+
+    ret.value shouldBe Some(Success(contextWithNoTimers))
+  }
+
 
   // HELPERS
 
@@ -64,8 +73,10 @@ class AkkaSchedulerSleepActionFactorySpec extends FlatSpec with Matchers {
     val actionStart = OffsetDateTime.now()
 
     def contextWithElapsedTime(elapsedTime: Duration) = {
-      ScenarioContext(ActionTimers(actionStart, elapsedTime))
+      ScenarioContext(Some(ActionTimers(actionStart, elapsedTime)))
     }
+
+    val contextWithNoTimers = ScenarioContext(None)
   }
 
 }

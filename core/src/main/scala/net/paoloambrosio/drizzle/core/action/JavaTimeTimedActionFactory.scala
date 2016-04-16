@@ -17,7 +17,7 @@ trait JavaTimeTimedActionFactory extends TimedActionFactory {
       val nanoTime = System.nanoTime()
       f(scenarioContext.sessionVariables).map { sv =>
         val elapsedTime = Duration.ofNanos(System.nanoTime() - nanoTime)
-        ScenarioContext(ActionTimers(startTime, elapsedTime), sv)
+        ScenarioContext(Some(ActionTimers(startTime, elapsedTime)), sv)
       }
     }
   }

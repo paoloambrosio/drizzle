@@ -1,6 +1,6 @@
 package net.paoloambrosio.drizzle.runner
 
-import java.time.{Clock, Duration, OffsetDateTime}
+import java.time.Clock
 
 import akka.actor._
 import akka.pattern.pipe
@@ -16,10 +16,10 @@ object VUser {
 
   sealed trait Data
   case object Uninitialized extends Data
-  final case class Initialised(orchestrator: ActorRef, scenario: Scenario) extends Data
+  final case class Initialised(orchestrator: ActorRef, steps: Stream[ScenarioStep]) extends Data
 
   // IN
-  final case class Start(scenario: Scenario)
+  final case class Start(steps: Stream[ScenarioStep])
   case object Stop
   private case class NextStep(context: ScenarioContext)
 
@@ -32,8 +32,7 @@ object VUser {
     *
     * @return a Props for creating a VUser
     */
-  def props(clock: Clock = Clock.systemUTC()): Props = Props(new VUser(clock))
-
+  def props = Props(new VUser(Clock.systemUTC()))
 }
 
 class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
@@ -45,16 +44,16 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
   startWith(Idle, Uninitialized)
 
   when(Idle) {
-    case Event(Start(scenario: Scenario), Uninitialized) =>
+    case Event(Start(scenario), Uninitialized) =>
       val orchestrator = sender()
       self ! NextStep(initialContext)
       goto(Running) using Initialised(orchestrator, scenario)
   }
 
   when(Running) {
-    case Event(NextStep(context), s @ Initialised(_, Scenario(_, nextStep #:: rest))) =>
+    case Event(NextStep(context), s @ Initialised(_, nextStep #:: rest)) =>
       execAction(nextStep, context)
-      stay using s.copy(scenario = s.scenario.copy(steps = rest))
+      stay using s.copy(steps = rest)
     case Event(NextStep(context), Initialised(_, _)) =>
       stop()
     case Event(Stop, Initialised(_, _)) =>
@@ -70,10 +69,9 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
 
   initialize()
 
-  private def initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
+  private def initialContext = ScenarioContext(None)
 
   private def execAction(step: ScenarioStep, beginContext: ScenarioContext) = {
-    step.action(beginContext) map(NextStep(_)) pipeTo self
+    step.action(beginContext) map (NextStep(_)) pipeTo self
   }
-
 }

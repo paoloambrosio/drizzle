@@ -2,7 +2,7 @@ package net.paoloambrosio.drizzle.runner
 
 import java.time._
 
-import akka.testkit.{ImplicitSender, TestFSMRef, TestKit}
+import akka.testkit._
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.runner.VUser._
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
@@ -21,7 +21,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     val ic = initialContext
     val f = incrementStartByASecond
 
-    vuser ! Start(scenario(successful(f), successful(f)))
+    vuser ! Start(steps(successful(f), successful(f)))
 
     expectMsg(VUser.Success)
     // TODO check VUser terminated
@@ -33,7 +33,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     val f = incrementStartByASecond
     val exception = new Exception("BOOM!")
 
-    vuser ! Start(scenario(successful(f), failing(exception), successful()))
+    vuser ! Start(steps(successful(f), failing(exception), successful()))
 
     expectMsg(VUser.Failure(exception))
     // TODO check VUser terminated
@@ -41,7 +41,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
   }
 
   it should "stop when requested" in new TestContext {
-    vuser ! Start(scenario(async(), async()))
+    vuser ! Start(steps(async(), async()))
 
     actionsExecuted shouldBe 0
     advance()
@@ -53,7 +53,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
   }
 
   it should "run async actions sequentially" in new TestContext {
-    vuser ! Start(scenario(async(), async()))
+    vuser ! Start(steps(async(), async()))
 
     actionsExecuted shouldBe 0
     advance()
@@ -70,17 +70,13 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     lazy val vuser = TestFSMRef(new VUser(clock), testActor)
 
-    def scenario(actions: ScenarioAction*) = {
-      val steps = actions.map(ScenarioStep("step", _)).toStream
-      Scenario("scenario", steps)
-    }
+    def steps(actions: ScenarioAction*) = actions.map(ScenarioStep(None, _)).toStream
 
     val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
-    val initialContext = ScenarioContext(ActionTimers(OffsetDateTime.now(clock), Duration.ZERO))
-    val incrementStartByASecond: ScenarioContext => ScenarioContext = { c =>
-      // It is worth introducing a lens library?
-      c.copy(lastAction = c.lastAction.copy(start = c.lastAction.start.plusSeconds(1)))
-    }
+
+    val testStartTime = OffsetDateTime.now(clock)
+    val initialContext = ScenarioContext(None)
+    val incrementStartByASecond = changeTimers(start = Duration.ofSeconds(1))
 
     def successful(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
       Future.successful(f(c))
@@ -110,6 +106,13 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
       })
     }
     def actionsExecuted = contexts.length
+
+    def changeTimers(start: Duration = Duration.ZERO, elapsedTime: Duration = Duration.ZERO): ScenarioContext => ScenarioContext = { c =>
+      c.copy(latestAction = c.latestAction.map(_.copy(
+        start = c.latestAction.get.start.plus(start),
+        elapsedTime = elapsedTime
+      )))
+    }
   }
 
 }

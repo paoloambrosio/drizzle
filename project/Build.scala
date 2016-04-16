@@ -5,19 +5,20 @@ object BuildSettings {
   val buildSettings = Seq(
     organization := "net.paoloambrosio.drizzle",
     version      := "0.1",
-    scalaVersion := "2.11.7"
+    scalaVersion := "2.11.8"
   )
 }
 
 object Dependencies {
-  val akkaV = "2.4.1"
+  val akkaV = "2.4.3"
 
-  val akkaActor   = "com.typesafe.akka" %% "akka-actor"   % akkaV
+  val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 
-  val scalaTest              = "org.scalatest"     %% "scalatest"                % "2.2.4"        % Test
-  val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"             % akkaV          % Test
-  val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"      % "0.4.0"        % Test
-  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest" % "0.4.0"        % Test
+  val scalaTest              = "org.scalatest"     %% "scalatest"                   % "2.2.6"        % Test
+  val mockito                = "org.mockito"       %  "mockito-core"                % "1.10.19"      % Test
+  val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"                % akkaV          % Test
+  val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"         % "0.4.0"        % Test
+  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.6.1"        % Test
 }
 
 object Resolvers {
@@ -36,7 +37,8 @@ object DrizzleBuild extends Build {
   val commonDeps = Seq(
     akkaActor,
     akkaTestkit,
-    scalaTest
+    scalaTest,
+    mockito
   )
 
   val commonSettings = buildSettings ++ Seq(
@@ -50,6 +52,12 @@ object DrizzleBuild extends Build {
     )
   )
 
+  lazy val root = Project(
+      id = "root",
+      base = file("."),
+      settings = buildSettings
+    ).aggregate(core, metricsCommon, metricsInfluxDb)
+
   lazy val core =  Project(
       id = "core",
       base = file("core"),
@@ -58,7 +66,7 @@ object DrizzleBuild extends Build {
           akkaMockScheduler
         )
       )
-    )
+    ).dependsOn(metricsCommon)
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
@@ -71,7 +79,7 @@ object DrizzleBuild extends Build {
       base = file("metrics/influxdb"),
       settings = commonSettings ++ dockerTestKitSettings ++ Seq(
         libraryDependencies ++= Seq(
-          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.0"
+          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.5"
         )
       )
     ).dependsOn(metricsCommon)
