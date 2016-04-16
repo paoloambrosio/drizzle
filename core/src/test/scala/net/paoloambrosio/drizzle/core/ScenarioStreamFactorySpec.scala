@@ -69,8 +69,9 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers
 
   // HELPERS
 
-  class TestContext(val vUserEventSource: VUserEventSource = mock[VUserEventSource]) extends ScenarioStreamFactory(vUserEventSource) with SleepActionFactory {
+  trait TestContext extends ScenarioStreamFactory with SleepActionFactory {
 
+    override val vUserEventSource: VUserEventSource = mock[VUserEventSource]
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
     lazy val emptyScenario = aScenario()

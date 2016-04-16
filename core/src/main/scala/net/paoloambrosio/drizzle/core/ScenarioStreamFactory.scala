@@ -5,10 +5,11 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.core.action.SleepActionFactory
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
-abstract class ScenarioStreamFactory(vUserEventSource: VUserEventSource) { this: SleepActionFactory =>
+trait ScenarioStreamFactory { this: SleepActionFactory =>
 
+  def vUserEventSource: VUserEventSource
   implicit def ec: ExecutionContext
 
   /**
