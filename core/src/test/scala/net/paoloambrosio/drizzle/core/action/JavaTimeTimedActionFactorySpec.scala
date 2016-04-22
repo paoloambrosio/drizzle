@@ -28,8 +28,6 @@ class JavaTimeTimedActionFactorySpec extends FlatSpec
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
     override lazy val clock = t1clock
 
-    val sessionVariables: SessionVariables = ()
-
     private val t0clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
     val t1clock: Clock = Clock.offset(t0clock, Duration.ofSeconds(2))
 
