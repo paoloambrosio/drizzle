@@ -16,12 +16,12 @@ class FixedWindowThrottler(pattern: Stream[Int]) extends Throttler {
   var currentOffset = -1
 
   override def throttle(offset: Duration): Duration = {
-    val offsetFromCurrent = (offset.toMillis / 1000).toInt - currentOffset
-    if (offsetFromCurrent < 0)
-      throw new IllegalArgumentException("Offsets must be monotonic")
+    val offsetInSeconds = (offset.toMillis / 1000).toInt
+    var offsetFromCurrent = if (offsetInSeconds > currentOffset) offsetInSeconds - currentOffset else 0
     if (offsetFromCurrent > 0)
       move(offsetFromCurrent)
-    Duration.ofSeconds(takeFirstAvailableSpace()).plus(offset)
+    takeFirstAvailableSpace()
+    Duration.ofSeconds(currentOffset - offsetInSeconds).plus(offset)
   }
 
   private def move(i: Int) = {
@@ -32,13 +32,11 @@ class FixedWindowThrottler(pattern: Stream[Int]) extends Throttler {
     available = patternIterator.next()
   }
 
-  private def takeFirstAvailableSpace(): Int = {
+  private def takeFirstAvailableSpace() = {
     @tailrec
-    def takeFirstAvailableSpaceAcc(i: Int): Int = {
+    def takeFirstAvailableSpaceAcc(i: Int): Unit = {
       available = available - 1
-      if (available >= 0) {
-        i
-      } else {
+      if (available < 0) {
         move(1)
         takeFirstAvailableSpaceAcc(i+1)
       }
