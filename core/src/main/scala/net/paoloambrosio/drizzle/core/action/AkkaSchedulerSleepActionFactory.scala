@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait AkkaSchedulerSleepActionFactory extends SleepActionFactory {
 
   implicit def ec: ExecutionContext
-  implicit def scheduler: Scheduler
+  def scheduler: Scheduler
 
   /**
     * Pause from the end of the previous action.

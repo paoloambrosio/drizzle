@@ -64,7 +64,7 @@ class AkkaSchedulerSleepActionFactorySpec extends FlatSpec with Matchers {
 
   trait TestContext extends AkkaSchedulerSleepActionFactory {
     val time = new VirtualTime
-    override implicit val scheduler: Scheduler = time.scheduler
+    override val scheduler: Scheduler = time.scheduler
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
     val someDuration = (new Random().nextInt(9)+1) seconds
