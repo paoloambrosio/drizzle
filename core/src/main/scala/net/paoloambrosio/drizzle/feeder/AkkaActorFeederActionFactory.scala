@@ -1,12 +1,12 @@
 package net.paoloambrosio.drizzle.feeder
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout._
 import net.paoloambrosio.drizzle.core._
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
 trait AkkaActorFeederActionFactory extends FeederActionFactory {
 
@@ -26,24 +26,5 @@ trait AkkaActorFeederActionFactory extends FeederActionFactory {
       case FeedResponse(None) =>
         Future.failed(new IllegalStateException("Feeder source terminated"))
     }
-  }
-}
-
-object FeederActor {
-
-  case class FeedRequest(feeder: Iterator[SessionVariables])
-  case class FeedResponse(vars: Option[SessionVariables])
-
-  def props = Props(new FeederActor)
-}
-
-class FeederActor extends Actor {
-  import FeederActor._
-
-  override def receive: Receive = {
-    case FeedRequest(feeder) if feeder.hasNext =>
-      sender() ! FeedResponse(Some(feeder.next()))
-    case FeedRequest(_) =>
-      sender() ! FeedResponse(None)
   }
 }
