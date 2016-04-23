@@ -1,24 +1,33 @@
 package net.paoloambrosio.drizzle.cli
 
-import net.paoloambrosio.drizzle.core.{Scenario, ScenarioProfile, ScenarioStep}
+import net.paoloambrosio.drizzle.core.{Scenario, ScenarioProfile}
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Random
 
 object ExampleApp extends DrizzleApp {
 
+  def printChar(s: String) = exec(s"print$s", vars => {
+    val n = vars("N")
+    println(s"$s[$n]")
+    Future.successful(vars)
+  })
+
+  // use def to have a different feed each time, lazy val for the same feed across all scenarios
+  lazy val randomCharFeeder = Stream.from(1).map(n => Map("N" -> n)).toIterator
+
   override def simulation = Seq(
-    ScenarioProfile(Scenario("A", Stream(
-      printScenario("A1"), sleepScenario(2 seconds), printScenario("A2")
-    )), rampUsers(4, 1 second)),
-    ScenarioProfile(Scenario("B", Stream(
-      printScenario("B1"), sleepScenario(2 seconds), printScenario("B2")
-    )), rampUsers(4, 2 seconds))
+    ScenarioProfile(
+      scenario("A",
+        feed(randomCharFeeder), printChar("A1"), sleep("wait", 2 seconds), printChar("A2")
+      ),
+      rampUsers(4, 4 second)),
+    ScenarioProfile(scenario("B",
+      feed(randomCharFeeder), printChar("B1"), sleep("wait", 2 seconds), printChar("B2")
+    ), rampUsers(4, 10 seconds))
   )
 
-  def printScenario(s: String) = ScenarioStep(Some("print"), timedAction(sc => { print(s); Future.successful(sc) }))
-  def sleepScenario(t: FiniteDuration) = ScenarioStep(Some("wait"), thinkTime(t))
-
-  def rampUsers(n: Int, over: java.time.Duration) = Stream.continually(over.dividedBy(n)).take(n)
+  override lazy val throttlingPattern = Stream.fill(5)(0) #::: Stream.continually(Int.MaxValue)
 }
