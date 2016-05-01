@@ -101,7 +101,11 @@ object DrizzleBuild extends Build {
     id = "gatling-cli",
     //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/cli"),
-    settings = buildSettings
+    settings = commonSettings  ++ Seq(
+        libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value
+        )
+      )
   ).dependsOn(cli, gatlingDsl)
 
   // TODO: create a separate build for the examples!
