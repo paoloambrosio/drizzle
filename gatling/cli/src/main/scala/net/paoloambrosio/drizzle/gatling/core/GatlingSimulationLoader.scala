@@ -47,7 +47,7 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case r @ HttpRequest(name, verb, path) => Stream(ScenarioStep(Some(name), timedAction(vars => {
+    case r @ HttpRequest(name, verb, path, headers, formParams) => Stream(ScenarioStep(Some(name), timedAction(vars => {
       val httpProtocol: HttpProtocol = extract[HttpProtocol](protocols)
       println(s"HTTP ${r.name}: ${r.verb} ${fullURL(httpProtocol.baseURLs, r.path)}")
 //      for ((k,v) <- httpProtocol.headers) println(s"  $k: $v")
