@@ -56,7 +56,7 @@ object DrizzleBuild extends Build {
       id = "root",
       base = file("."),
       settings = buildSettings
-    ).aggregate(core, metricsCommon, metricsInfluxDb)
+    ).aggregate(core, metricsCommon, metricsInfluxDb, gatlingDsl)
 
   lazy val core =  Project(
       id = "core",
@@ -67,6 +67,12 @@ object DrizzleBuild extends Build {
         )
       )
     ).dependsOn(metricsCommon)
+
+  lazy val cli =  Project(
+      id = "cli",
+      base = file("cli"),
+      settings = commonSettings
+    ).dependsOn(core)
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
@@ -84,5 +90,26 @@ object DrizzleBuild extends Build {
       )
     ).dependsOn(metricsCommon)
 
-}
+  lazy val gatlingDsl =  Project(
+    id = "gatling-dsl",
+//    version = s"${version}-2.1.7", // TODO
+    base = file("gatling/dsl"),
+    settings = buildSettings
+  )
 
+  lazy val gatlingCli =  Project(
+    id = "gatling-cli",
+    //    version = s"${version}-2.1.7", // TODO
+    base = file("gatling/cli"),
+    settings = buildSettings
+  ).dependsOn(cli, gatlingDsl)
+
+  // TODO: create a separate build for the examples!
+
+  lazy val gatlingTutorial =  Project(
+    id = "gatling-tutorial-example",
+    base = file("examples/gatling-tutorial"),
+    settings = buildSettings
+  ).dependsOn(gatlingCli)
+
+}
