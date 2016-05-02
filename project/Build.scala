@@ -68,11 +68,22 @@ object DrizzleBuild extends Build {
       )
     ).dependsOn(metricsCommon)
 
+  lazy val http =  Project(
+    id = "http",
+    base = file("http"),
+    settings = commonSettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http-core" % akkaV,
+        "com.typesafe.akka" %% "akka-http-experimental" % akkaV
+      )
+    )
+  ).dependsOn(core)
+
   lazy val cli =  Project(
       id = "cli",
       base = file("cli"),
       settings = commonSettings
-    ).dependsOn(core)
+    ).dependsOn(core, http)
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
@@ -95,7 +106,7 @@ object DrizzleBuild extends Build {
 //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/dsl"),
     settings = buildSettings
-  )
+  ).dependsOn(http)
 
   lazy val gatlingCli =  Project(
     id = "gatling-cli",
