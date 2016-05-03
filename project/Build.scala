@@ -10,7 +10,7 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val akkaV = "2.4.3"
+  val akkaV = "2.4.4"
 
   val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 

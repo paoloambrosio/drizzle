@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import net.paoloambrosio.drizzle.core.ScenarioStreamFactory
 import net.paoloambrosio.drizzle.core.action.{AkkaSchedulerSleepActionFactory, CoreActionFactory, JavaTimeTimedActionFactory}
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
-import net.paoloambrosio.drizzle.http.action.PrintHttpActionFactory
+import net.paoloambrosio.drizzle.http.action.AkkaHttpActionFactory
 import net.paoloambrosio.drizzle.runner.Orchestrator
 import net.paoloambrosio.drizzle.runner.events.MessagingEventSource
 
@@ -16,7 +16,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 abstract class DrizzleCli extends App with ScenarioStreamFactory
-    with CoreActionFactory with PrintHttpActionFactory
+    with CoreActionFactory with AkkaHttpActionFactory
     with AkkaSchedulerSleepActionFactory with JavaTimeTimedActionFactory {
     this: SimulationLoader =>
 
