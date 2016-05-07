@@ -3,7 +3,7 @@ package net.paoloambrosio.drizzle.metrics.influxdb
 import java.time.{OffsetDateTime, ZoneOffset}
 
 import com.paulgoldbaum.influxdbclient.{Database, Point}
-import net.paoloambrosio.drizzle.metrics.{MetricsRepository, RuntimeInfo, TimedActionMetrics}
+import net.paoloambrosio.drizzle.metrics.{MetricsRepository, TimedActionMetrics}
 
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -1,7 +1,5 @@
 package net.paoloambrosio.drizzle.throttler
 
-import java.time.{Clock, Duration}
-
 import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit, TestProbe}
 import net.paoloambrosio.drizzle.core.{ScenarioAction, ScenarioContext}
 import net.paoloambrosio.drizzle.throttler.ThrottlingActor._
@@ -10,8 +8,8 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
 class AkkaActorThrottledActionFactorySpec extends TestKit(TestActorSystem())
   with ImplicitSender with DefaultTimeout

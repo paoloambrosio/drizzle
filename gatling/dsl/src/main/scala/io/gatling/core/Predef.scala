@@ -2,8 +2,6 @@ package io.gatling.core
 
 import net.paoloambrosio.drizzle.gatling.core._
 
-import scala.concurrent.duration.Duration
-
 /**
   * Gatling core DSL
   */
