@@ -1,14 +1,12 @@
 package net.paoloambrosio.drizzle.core
 
 import net.paoloambrosio.drizzle.core.action.LoopActionFactory
-import org.scalatest.concurrent.Futures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Future
 
-class LoopActionFactorySpec extends FlatSpec with Matchers
-  with Futures with MockitoSugar {
+class LoopActionFactorySpec extends FlatSpec with Matchers with MockitoSugar {
 
   "forever" should "create an infinite loop" in new TestContext {
     val loop = forever(Stream(a1, a2, a3))

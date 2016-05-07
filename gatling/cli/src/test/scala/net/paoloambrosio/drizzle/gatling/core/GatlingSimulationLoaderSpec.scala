@@ -3,8 +3,9 @@ package net.paoloambrosio.drizzle.gatling.core
 import java.net.{MalformedURLException, URL}
 import java.time.Duration
 
+import net.paoloambrosio.drizzle.core.SessionVariables
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
-import net.paoloambrosio.drizzle.core.{ScenarioAction, SessionVariables}
+import net.paoloambrosio.drizzle.http.action.HttpActionFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Future
@@ -35,9 +36,11 @@ class GatlingSimulationLoaderSpec extends FlatSpec with Matchers {
     a [MalformedURLException] should be thrownBy fullURL(Seq.empty, "/")
   }
 
-  trait TestContext extends GatlingSimulationLoader with CoreActionFactory {
-    override def timedAction(f: (SessionVariables) => Future[SessionVariables]): ScenarioAction = ???
-    override def pacing(duration: Duration): ScenarioAction = ???
-    override def thinkTime(duration: Duration): ScenarioAction = ???
+  trait TestContext extends GatlingSimulationLoader with CoreActionFactory with HttpActionFactory {
+    override def timedAction(f: (SessionVariables) => Future[SessionVariables]) = ???
+    override def pacing(duration: Duration) = ???
+    override def thinkTime(duration: Duration) = ???
+    def httpGet(url: URL) = ???
+    def httpPost(url: URL) = ???
   }
 }

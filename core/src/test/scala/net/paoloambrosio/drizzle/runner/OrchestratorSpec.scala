@@ -16,6 +16,7 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
     with FlatSpecLike with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

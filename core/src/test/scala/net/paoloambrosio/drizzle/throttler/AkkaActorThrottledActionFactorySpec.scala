@@ -19,6 +19,7 @@ class AkkaActorThrottledActionFactorySpec extends TestKit(TestActorSystem())
   with ScalaFutures with MockitoSugar {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

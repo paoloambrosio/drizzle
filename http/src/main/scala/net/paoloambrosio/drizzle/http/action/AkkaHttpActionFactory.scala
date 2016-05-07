@@ -1,4 +1,7 @@
 package net.paoloambrosio.drizzle.http.action
+
+import java.net.URL
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -7,36 +10,41 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory
-import net.paoloambrosio.drizzle.http.model.{FormUrlEncodedEntity, Get, NoEntity, Post, HttpRequest => DrizzleHttpRequest}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 trait AkkaHttpActionFactory extends HttpActionFactory { this: TimedActionFactory =>
 
   implicit def system: ActorSystem
-  implicit val materializer = ActorMaterializer()
+  implicit def materializer: ActorMaterializer
   implicit def ec: ExecutionContext
 
-  override def httpAction(request: DrizzleHttpRequest): ScenarioAction = timedAction(httpCall(request))
+  override def httpGet(url: URL): HttpActionBuilder = new AkkaHttpActionBuilder(HttpMethods.GET, url)
+  override def httpPost(url: URL): HttpActionBuilder = new AkkaHttpActionBuilder(HttpMethods.POST, url)
 
-  private def httpCall(request: DrizzleHttpRequest): SessionVariables => Future[SessionVariables] = { vars =>
-    val host = request.url.getHost
-    val port = if (request.url.getPort > 0) request.url.getPort else request.url.getDefaultPort
-    val connectionFlow = Http().outgoingConnection(host, port)
-    Source.single(toAkkaRequest(request)).via(connectionFlow).runWith(Sink.head).map(_ => vars)
+
+  private class AkkaHttpActionBuilder(method: HttpMethod, url: URL) extends HttpActionBuilder {
+
+    val connectionFlow = {
+      val host = url.getHost
+      val port = if (url.getPort > 0) url.getPort else url.getDefaultPort
+      Http().outgoingConnection(host, port)
+    }
+
+    var httpRequest = HttpRequest(method, Uri(url.getPath))
+
+    override def headers(headers: Seq[(String, String)]): HttpActionBuilder = {
+      httpRequest = httpRequest.copy(headers = headers.to[collection.immutable.Seq] map { case (n,v) => RawHeader(n,v) })
+      this
+    }
+    override def entity(params: Seq[(String, String)]): HttpActionBuilder = {
+      httpRequest = httpRequest.copy(entity = FormData(params:_*).toEntity)
+      this
+    }
+
+    override def build(): ScenarioAction = timedAction { vars =>
+      Source.single(httpRequest).via(connectionFlow).runWith(Sink.head).map(_ => vars)
+    }
   }
 
-  def toAkkaRequest(request: DrizzleHttpRequest): HttpRequest = {
-    val method = request.verb match {
-      case Get => HttpMethods.GET
-      case Post => HttpMethods.POST
-    }
-    val uri = Uri(request.url.getPath)
-    val headers = request.headers.to[collection.immutable.Seq] map { case (n,v) => RawHeader(n,v) }
-    val entity = request.entity match {
-      case NoEntity => HttpEntity.Empty
-      case FormUrlEncodedEntity(params) => FormData(params:_*).toEntity
-    }
-    HttpRequest(method, uri, headers, entity)
-  }
 }

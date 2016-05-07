@@ -1,13 +1,17 @@
 package net.paoloambrosio.drizzle.gatling.http
 
-import java.net.URL
-
 import net.paoloambrosio.drizzle.gatling.core.Action
-import net.paoloambrosio.drizzle.http.model.{HttpVerb, Get, Post}
+
+object HttpRequest {
+
+  sealed trait HttpMethod
+  case object Get extends HttpMethod
+  case object Post extends HttpMethod
+}
 
 case class HttpRequest(
   name: String,
-  verb: HttpVerb,
+  method: HttpRequest.HttpMethod,
   path: String,
   headers: Map[String, String] = Map.empty,
   formParams: Seq[(String, String)] = Seq.empty
@@ -19,6 +23,6 @@ case class HttpRequest(
 
 class HttpRequestFactory(name: String) {
 
-  def get(path: String): HttpRequest = HttpRequest(name, Get, path)
-  def post(path: String): HttpRequest = HttpRequest(name, Post, path)
+  def get(path: String): HttpRequest = HttpRequest(name, HttpRequest.Get, path)
+  def post(path: String): HttpRequest = HttpRequest(name, HttpRequest.Post, path)
 }

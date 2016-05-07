@@ -15,6 +15,7 @@ class MetricsWriterSpec extends TestKit(TestActorSystem())
     with FlatSpecLike with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

@@ -1,5 +1,5 @@
+import sbt.Keys._
 import sbt._
-import Keys._
 
 object BuildSettings {
   val buildSettings = Seq(
@@ -56,7 +56,7 @@ object DrizzleBuild extends Build {
       id = "root",
       base = file("."),
       settings = buildSettings
-    ).aggregate(core, metricsCommon, metricsInfluxDb, gatlingDsl)
+    ).aggregate(core, http, cli, metricsCommon, metricsInfluxDb, gatlingCli, gatlingDsl)
 
   lazy val core =  Project(
       id = "core",
@@ -74,10 +74,11 @@ object DrizzleBuild extends Build {
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http-core" % akkaV,
-        "com.typesafe.akka" %% "akka-http-experimental" % akkaV
+        "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
+        "com.github.tomakehurst" % "wiremock" % "1.58" % Test
       )
     )
-  ).dependsOn(core)
+  ).dependsOn(core % "test->test;compile->compile")
 
   lazy val cli =  Project(
       id = "cli",

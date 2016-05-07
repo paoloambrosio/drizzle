@@ -7,8 +7,8 @@ import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
+import net.paoloambrosio.drizzle.gatling.http.HttpRequest._
 import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest => GatlingHttpRequest}
-import net.paoloambrosio.drizzle.http.model.{HttpRequest => DrizzleHttpRequest, NoEntity, FormUrlEncodedEntity}
 import net.paoloambrosio.drizzle.http.action.HttpActionFactory
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
@@ -49,14 +49,20 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case GatlingHttpRequest(name, verb, path, headers, formParams) => {
+    case GatlingHttpRequest(name, method, path, headers, formParams) => {
       val httpProtocol: HttpProtocol = extract[HttpProtocol](protocols)
       val fullUrl = fullURL(httpProtocol.baseURLs, path)
       val fullHeaders = httpProtocol.headers ++ headers
-      val entity = if (formParams.isEmpty) NoEntity else FormUrlEncodedEntity(formParams)
-      Stream(ScenarioStep(Some(name), httpAction(DrizzleHttpRequest(verb, fullUrl, fullHeaders.toSeq, entity))))
+      val actionBuilder = httpAction(method, fullUrl).headers(fullHeaders.toSeq)
+      val action = if (!formParams.isEmpty) actionBuilder.entity(formParams).build() else actionBuilder.build()
+      Stream(ScenarioStep(Some(name), action))
     }
     case _ => ???
+  }
+
+  def httpAction(method: HttpMethod, url: URL) = method match {
+    case Get => httpGet(url)
+    case Post => httpGet(url)
   }
 
   protected def fullURL(baseUrls: Seq[URL], path: String): URL = baseUrls match {

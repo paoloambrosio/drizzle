@@ -7,7 +7,6 @@ import net.paoloambrosio.drizzle.core.events.VUserEventSource
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.mockito.Mockito
 import org.mockito.Mockito._
-import org.scalatest.concurrent.Futures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
@@ -15,8 +14,7 @@ import utils.CallingThreadExecutionContext
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-class ScenarioStreamFactorySpec extends FlatSpec with Matchers
-  with Futures with MockitoSugar {
+class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar {
 
   it should "delay vusers based on the load profile" in new TestContext {
     scenarioStream(Seq(

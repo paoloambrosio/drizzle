@@ -14,6 +14,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     with FlatSpecLike with Matchers with BeforeAndAfterAll {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

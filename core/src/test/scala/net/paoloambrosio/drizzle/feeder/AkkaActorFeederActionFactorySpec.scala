@@ -13,6 +13,7 @@ class AkkaActorFeederActionFactorySpec extends TestKit(TestActorSystem()) with I
   with FlatSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 
