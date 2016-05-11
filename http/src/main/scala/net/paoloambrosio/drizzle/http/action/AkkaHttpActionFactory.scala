@@ -25,13 +25,13 @@ trait AkkaHttpActionFactory extends HttpActionFactory { this: TimedActionFactory
 
   private class AkkaHttpActionBuilder(method: HttpMethod, url: URL) extends HttpActionBuilder {
 
-    val connectionFlow = {
+    private val connectionFlow = {
       val host = url.getHost
       val port = if (url.getPort > 0) url.getPort else url.getDefaultPort
       Http().outgoingConnection(host, port)
     }
 
-    var httpRequest = HttpRequest(method, Uri(url.getPath))
+    private var httpRequest = HttpRequest(method, Uri(url.getPath))
 
     override def headers(headers: Seq[(String, String)]): HttpActionBuilder = {
       httpRequest = httpRequest.copy(headers = headers.to[collection.immutable.Seq] map { case (n,v) => RawHeader(n,v) })

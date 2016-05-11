@@ -75,6 +75,7 @@ object DrizzleBuild extends Build {
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http-core" % akkaV,
         "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
+        "org.asynchttpclient" % "async-http-client" % "2.0.2",
         "com.github.tomakehurst" % "wiremock" % "1.58" % Test
       )
     )

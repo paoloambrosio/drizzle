@@ -4,20 +4,20 @@ import java.time.Clock
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import net.paoloambrosio.drizzle.core.ScenarioStreamFactory
 import net.paoloambrosio.drizzle.core.action.{AkkaSchedulerSleepActionFactory, CoreActionFactory, JavaTimeTimedActionFactory}
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
-import net.paoloambrosio.drizzle.http.action.AkkaHttpActionFactory
+import net.paoloambrosio.drizzle.http.action.NingHttpActionFactory
 import net.paoloambrosio.drizzle.runner.Orchestrator
 import net.paoloambrosio.drizzle.runner.events.MessagingEventSource
+import org.asynchttpclient.DefaultAsyncHttpClient
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 abstract class DrizzleCli extends App with ScenarioStreamFactory
-    with CoreActionFactory with AkkaHttpActionFactory
+    with CoreActionFactory with NingHttpActionFactory
     with AkkaSchedulerSleepActionFactory with JavaTimeTimedActionFactory {
     this: SimulationLoader =>
 
@@ -27,8 +27,8 @@ abstract class DrizzleCli extends App with ScenarioStreamFactory
   }
 
   val config = ConfigFactory.load()
-  override implicit final val system = ActorSystem("drizzle-cli", config)
-  override implicit final val materializer = ActorMaterializer()
+  final val system = ActorSystem("drizzle-cli", config)
+  override final val asyncHttpClient = new DefaultAsyncHttpClient
   override final val ec = system.dispatcher
   override final val scheduler = system.scheduler
   override final val clock: Clock = Clock.systemUTC()
@@ -43,4 +43,5 @@ abstract class DrizzleCli extends App with ScenarioStreamFactory
   val result = orchestrator.ask(Orchestrator.Start(scenarios))(durationTimeout)
   Await.result(result, durationTimeout)
   system.terminate()
+  asyncHttpClient.close()
 }
