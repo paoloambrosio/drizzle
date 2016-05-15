@@ -2,7 +2,6 @@ package net.paoloambrosio.drizzle.http.action
 
 import java.net.URL
 
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.client.WireMock._
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory
@@ -13,10 +12,13 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem, WireMockSugar}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 class NingHttpActionFactorySpec extends TestKit(TestActorSystem())
   with FlatSpecLike with Matchers with BeforeAndAfterAll
   with ScalaFutures with WireMockSugar {
+
+  override implicit def patienceConfig = PatienceConfig(timeout = 1 second)
 
   val testSystem = system
 

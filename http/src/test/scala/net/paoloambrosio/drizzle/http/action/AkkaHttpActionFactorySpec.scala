@@ -12,10 +12,13 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem, WireMockSugar}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
   with FlatSpecLike with Matchers with BeforeAndAfterAll
   with ScalaFutures with WireMockSugar {
+
+  override implicit def patienceConfig = PatienceConfig(timeout = 1 second)
 
   val testSystem = system
 
