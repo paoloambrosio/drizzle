@@ -9,11 +9,10 @@ import akka.http.scaladsl.model.headers.{RawHeader, `Content-Type`, `User-Agent`
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.core.action.TimedActionFactory
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
-trait AkkaHttpActionFactory extends HttpActionFactory { this: TimedActionFactory =>
+trait AkkaHttpActionFactory extends HttpActionFactory {
 
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
@@ -66,8 +65,8 @@ trait AkkaHttpActionFactory extends HttpActionFactory { this: TimedActionFactory
       this
     }
 
-    override def build(): ScenarioAction = timedAction { vars =>
-      Source.single(httpRequest).via(connectionFlow).runWith(Sink.head).map(_ => vars)
+    override def apply(vars: SessionVariables): Future[(SessionVariables, Unit)] = {
+      Source.single(httpRequest).via(connectionFlow).runWith(Sink.head).map(_ => (vars, ()))
     }
   }
 

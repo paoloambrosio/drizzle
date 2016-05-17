@@ -3,12 +3,12 @@ package net.paoloambrosio.drizzle.gatling.core
 import java.net.{MalformedURLException, URL}
 import java.time.Duration
 
-import net.paoloambrosio.drizzle.core.SessionVariables
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
+import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedPart
 import net.paoloambrosio.drizzle.http.action.HttpActionFactory
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 class GatlingSimulationLoaderSpec extends FlatSpec with Matchers {
 
@@ -37,7 +37,8 @@ class GatlingSimulationLoaderSpec extends FlatSpec with Matchers {
   }
 
   trait TestContext extends GatlingSimulationLoader with CoreActionFactory with HttpActionFactory {
-    override def timedAction(f: (SessionVariables) => Future[SessionVariables]) = ???
+    implicit def ec: ExecutionContext = ???
+    override def timedAction[T](f: TimedPart[T]) = ???
     override def pacing(duration: Duration) = ???
     override def thinkTime(duration: Duration) = ???
     def httpGet(url: URL) = ???

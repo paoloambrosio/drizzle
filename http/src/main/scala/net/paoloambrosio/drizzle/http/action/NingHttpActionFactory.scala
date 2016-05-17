@@ -3,12 +3,11 @@ package net.paoloambrosio.drizzle.http.action
 import java.net.URL
 
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.core.action.TimedActionFactory
 import org.asynchttpclient._
 
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 
-trait NingHttpActionFactory extends HttpActionFactory { this: TimedActionFactory =>
+trait NingHttpActionFactory extends HttpActionFactory {
 
   protected def asyncHttpClient: AsyncHttpClient
 
@@ -32,10 +31,10 @@ trait NingHttpActionFactory extends HttpActionFactory { this: TimedActionFactory
       this
     }
 
-    override def build(): ScenarioAction = timedAction { vars =>
-      val p = Promise[SessionVariables]()
+    override def apply(vars: SessionVariables): Future[(SessionVariables, Unit)] = {
+      val p = Promise[(SessionVariables, Unit)]()
       boundRequestBuilder.execute(new AsyncCompletionHandler[Unit] {
-        override def onCompleted(response: Response) { p.success(vars) }
+        override def onCompleted(response: Response) { p.success((vars, ())) }
         override def onThrowable(t: Throwable) { p.failure(t) }
       })
       p.future

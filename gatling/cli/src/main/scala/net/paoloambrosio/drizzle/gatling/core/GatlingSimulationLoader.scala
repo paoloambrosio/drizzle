@@ -55,7 +55,7 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
       val fullUrl = fullURL(httpProtocol.baseURLs, path)
       val fullHeaders = httpProtocol.headers ++ headers
       val actionBuilder = httpAction(method, fullUrl).headers(fullHeaders.toSeq)
-      val action = if (!formParams.isEmpty) actionBuilder.entity(formParams).build() else actionBuilder.build()
+      val action = timedAction(if (!formParams.isEmpty) actionBuilder.entity(formParams) else actionBuilder)
       Stream(ScenarioStep(Some(name), action))
     }
     case _ => ???
