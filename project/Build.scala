@@ -10,7 +10,7 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val akkaV = "2.4.4"
+  val akkaV = "2.4.7"
 
   val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 
@@ -18,7 +18,7 @@ object Dependencies {
   val mockito                = "org.mockito"       %  "mockito-core"                % "1.10.19"      % Test
   val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"                % akkaV          % Test
   val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"         % "0.4.0"        % Test
-  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.6.1"        % Test
+  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.8.2"        % Test
 }
 
 object Resolvers {
@@ -75,7 +75,7 @@ object DrizzleBuild extends Build {
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http-core" % akkaV,
         "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
-        "org.asynchttpclient" % "async-http-client" % "2.0.2",
+        "org.asynchttpclient" % "async-http-client" % "2.0.5",
         "com.github.tomakehurst" % "wiremock" % "1.58" % Test
       )
     )
@@ -98,7 +98,7 @@ object DrizzleBuild extends Build {
       base = file("metrics/influxdb"),
       settings = commonSettings ++ dockerTestKitSettings ++ Seq(
         libraryDependencies ++= Seq(
-          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.5"
+          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.5.0"
         )
       )
     ).dependsOn(metricsCommon)
