@@ -5,7 +5,7 @@ import java.net.URL
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.{RawHeader, `Content-Type`, `User-Agent`}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import net.paoloambrosio.drizzle.core._
@@ -34,9 +34,33 @@ trait AkkaHttpActionFactory extends HttpActionFactory { this: TimedActionFactory
     private var httpRequest = HttpRequest(method, Uri(url.getPath))
 
     override def headers(headers: Seq[(String, String)]): HttpActionBuilder = {
-      httpRequest = httpRequest.copy(headers = headers.to[collection.immutable.Seq] map { case (n,v) => RawHeader(n,v) })
+      headers.foreach { case (n, v) => addHeader(n, v) }
       this
     }
+
+    /**
+      * Converts a name/value pair into a header or does special handling
+      * if not possible. Not all headers are created equal:
+      * {@link akka.http.impl.engine.rendering.HttpRequestRendererFactory}
+      *
+      * @param n Header name
+      * @param v Header value
+      */
+    private def addHeader(n: String, v: String): Unit = {
+      n.toLowerCase match {
+        case `Content-Type`.lowercaseName => ContentType.parse(v) match {
+          case Right(ct) => httpRequest = httpRequest.withEntity(httpRequest.entity.withContentType(ct))
+          case _ => // TODO Warning unparsable content type
+        }
+        case `User-Agent`.lowercaseName => addHeader(`User-Agent`(v))
+        case _ => addHeader(RawHeader(n, v))
+      }
+    }
+
+    private def addHeader(h: HttpHeader): Unit = {
+      httpRequest = httpRequest.addHeader(h)
+    }
+
     override def entity(params: Seq[(String, String)]): HttpActionBuilder = {
       httpRequest = httpRequest.copy(entity = FormData(params:_*).toEntity)
       this

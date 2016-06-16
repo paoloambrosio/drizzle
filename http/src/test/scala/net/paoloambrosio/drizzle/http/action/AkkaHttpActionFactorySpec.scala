@@ -28,7 +28,9 @@ class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
   }
 
   it should "not pass content type if not specified" in new TestContext {
-    val action: ScenarioAction = httpPost(url("/")).build()
+    val action: ScenarioAction =
+      httpPost(url("/"))
+        .build()
 
     whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/")).withoutHeader("Content-Type"))
@@ -36,12 +38,43 @@ class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
   }
 
   it should "send form parameters" in new TestContext {
-    val action: ScenarioAction = httpPost(url("/")).entity(Seq(("A","B"),("C",":)"))).build()
+    val action: ScenarioAction =
+      httpPost(url("/"))
+        .entity(Seq(("A","B"),("C",":)")))
+        .build()
 
     whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/"))
         .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
         .withRequestBody(equalTo("A=B&C=%3A%29"))
+      )
+    }
+  }
+
+  it should "override content type if specified" in new TestContext {
+    val action: ScenarioAction =
+      httpPost(url("/"))
+        .entity(Seq(("A","B"),("C",":)")))
+        .headers(Seq(("content-type", "text/plain;charset=iso-8859-1")))
+        .build()
+
+    whenReady(action(ScenarioContext())) { _ =>
+      verify(postRequestedFor(urlEqualTo("/"))
+        .withHeader("Content-Type", equalTo("text/plain; charset=ISO-8859-1"))
+        .withRequestBody(equalTo("A=B&C=%3A%29"))
+      )
+    }
+  }
+
+  it should "allow overriding the user agent" in new TestContext {
+    val action: ScenarioAction =
+      httpGet(url("/"))
+        .headers(Seq(("user-agent", "Mozilla/5.0 (Drizzle)")))
+        .build()
+
+    whenReady(action(ScenarioContext())) { _ =>
+      verify(getRequestedFor(urlEqualTo("/"))
+        .withHeader("User-Agent", equalTo("Mozilla/5.0 (Drizzle)"))
       )
     }
   }
