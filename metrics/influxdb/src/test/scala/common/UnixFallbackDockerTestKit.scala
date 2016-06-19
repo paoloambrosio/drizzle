@@ -18,7 +18,7 @@ trait UnixFallbackDockerTestKit extends DockerTestKit { self: Suite =>
   override implicit val docker: Docker = {
     val builder = DockerClientConfig.createDefaultConfigBuilder()
     if (System.getenv("DOCKER_HOST") == null)
-      builder.withUri("unix:///var/run/docker.sock")
+      builder.withDockerHost("unix:///var/run/docker.sock")
     new Docker(builder.build())
   }
 

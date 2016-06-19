@@ -6,15 +6,16 @@ import akka.testkit.{TestActorRef, TestKit}
 import net.paoloambrosio.drizzle.metrics.{MetricsRepository, TimedActionMetrics}
 import net.paoloambrosio.drizzle.runner.events.{MetricsWriter, VUserMetrics}
 import org.mockito.ArgumentCaptor
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
-import utils.TestActorSystem
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import utils.TestActorSystem
 
 class MetricsWriterSpec extends TestKit(TestActorSystem())
     with FlatSpecLike with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

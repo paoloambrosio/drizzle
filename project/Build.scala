@@ -1,5 +1,5 @@
+import sbt.Keys._
 import sbt._
-import Keys._
 
 object BuildSettings {
   val buildSettings = Seq(
@@ -10,7 +10,7 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val akkaV = "2.4.3"
+  val akkaV = "2.4.7"
 
   val akkaActor              = "com.typesafe.akka" %% "akka-actor"                  % akkaV
 
@@ -18,7 +18,7 @@ object Dependencies {
   val mockito                = "org.mockito"       %  "mockito-core"                % "1.10.19"      % Test
   val akkaTestkit            = "com.typesafe.akka" %% "akka-testkit"                % akkaV          % Test
   val akkaMockScheduler      = "com.miguno.akka"   %% "akka-mock-scheduler"         % "0.4.0"        % Test
-  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.6.1"        % Test
+  val dockerTestKitScalaTest = "com.whisk"         %% "docker-testkit-scalatest"    % "0.8.2"        % Test
 }
 
 object Resolvers {
@@ -56,7 +56,7 @@ object DrizzleBuild extends Build {
       id = "root",
       base = file("."),
       settings = buildSettings
-    ).aggregate(core, metricsCommon, metricsInfluxDb, gatlingDsl)
+    ).aggregate(core, http, cli, metricsCommon, metricsInfluxDb, gatlingCli, gatlingDsl)
 
   lazy val core =  Project(
       id = "core",
@@ -68,11 +68,24 @@ object DrizzleBuild extends Build {
       )
     ).dependsOn(metricsCommon)
 
+  lazy val http =  Project(
+    id = "http",
+    base = file("http"),
+    settings = commonSettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http-core" % akkaV,
+        "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
+        "org.asynchttpclient" % "async-http-client" % "2.0.5",
+        "com.github.tomakehurst" % "wiremock" % "1.58" % Test
+      )
+    )
+  ).dependsOn(core % "test->test;compile->compile")
+
   lazy val cli =  Project(
       id = "cli",
       base = file("cli"),
       settings = commonSettings
-    ).dependsOn(core)
+    ).dependsOn(core, http)
 
   lazy val metricsCommon =  Project(
       id = "metrics-common",
@@ -85,7 +98,7 @@ object DrizzleBuild extends Build {
       base = file("metrics/influxdb"),
       settings = commonSettings ++ dockerTestKitSettings ++ Seq(
         libraryDependencies ++= Seq(
-          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.4.5"
+          "com.paulgoldbaum" %% "scala-influxdb-client" % "0.5.0"
         )
       )
     ).dependsOn(metricsCommon)
@@ -95,7 +108,7 @@ object DrizzleBuild extends Build {
 //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/dsl"),
     settings = buildSettings
-  )
+  ).dependsOn(http)
 
   lazy val gatlingCli =  Project(
     id = "gatling-cli",

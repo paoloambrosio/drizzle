@@ -1,5 +1,5 @@
-import java.time.{Duration => jDuration}
 import java.time.temporal.{ChronoUnit => jChronoUnit}
+import java.time.{Duration => jDuration}
 import java.util.concurrent.{TimeUnit => jTimeUnit}
 
 import scala.concurrent.duration.FiniteDuration

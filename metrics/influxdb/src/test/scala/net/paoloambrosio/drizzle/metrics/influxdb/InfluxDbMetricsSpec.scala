@@ -1,7 +1,7 @@
 package net.paoloambrosio.drizzle.metrics.influxdb
 
 import java.time.format.DateTimeFormatter
-import java.time.{OffsetDateTime => jOffsetDateTime, Duration => jDuration, ZoneOffset}
+import java.time.{ZoneOffset, Duration => jDuration, OffsetDateTime => jOffsetDateTime}
 
 import com.paulgoldbaum.influxdbclient.{Database, InfluxDB}
 import common._

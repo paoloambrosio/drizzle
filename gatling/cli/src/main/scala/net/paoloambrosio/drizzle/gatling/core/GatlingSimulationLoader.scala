@@ -7,13 +7,15 @@ import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
-import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest}
+import net.paoloambrosio.drizzle.gatling.http.HttpRequest._
+import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest => GatlingHttpRequest}
+import net.paoloambrosio.drizzle.http.action.HttpActionFactory
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
-import scala.concurrent.Future
 import scala.reflect.{ClassTag, classTag}
 
-trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFactory { this: CoreActionFactory =>
+trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFactory {
+    this: CoreActionFactory with HttpActionFactory =>
 
   def load(ref: String): DrizzleSimulation = {
     val simClass = Class.forName(ref)
@@ -47,13 +49,20 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case r @ HttpRequest(name, verb, path, headers, formParams) => Stream(ScenarioStep(Some(name), timedAction(vars => {
+    case GatlingHttpRequest(name, method, path, headers, formParams) => {
       val httpProtocol: HttpProtocol = extract[HttpProtocol](protocols)
-      println(s"HTTP ${r.name}: ${r.verb} ${fullURL(httpProtocol.baseURLs, r.path)}")
-//      for ((k,v) <- httpProtocol.headers) println(s"  $k: $v")
-      Future.successful(vars)
-    })))
+      val fullUrl = fullURL(httpProtocol.baseURLs, path)
+      val fullHeaders = httpProtocol.headers ++ headers
+      val actionBuilder = httpAction(method, fullUrl).headers(fullHeaders.toSeq)
+      val action = if (!formParams.isEmpty) actionBuilder.entity(formParams).build() else actionBuilder.build()
+      Stream(ScenarioStep(Some(name), action))
+    }
     case _ => ???
+  }
+
+  def httpAction(method: HttpMethod, url: URL) = method match {
+    case Get => httpGet(url)
+    case Post => httpGet(url)
   }
 
   protected def fullURL(baseUrls: Seq[URL], path: String): URL = baseUrls match {

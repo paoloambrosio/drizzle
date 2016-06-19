@@ -7,15 +7,16 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
 import net.paoloambrosio.drizzle.runner.Orchestrator._
+import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
-import org.mockito.Mockito._
 
 class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
     with FlatSpecLike with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   override def afterAll {
+    super.afterAll
     TestKit.shutdownActorSystem(system)
   }
 

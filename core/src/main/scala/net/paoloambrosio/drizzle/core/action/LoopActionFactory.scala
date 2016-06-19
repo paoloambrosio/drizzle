@@ -1,7 +1,5 @@
 package net.paoloambrosio.drizzle.core.action
 
-import java.time.Duration
-
 import net.paoloambrosio.drizzle.core._
 
 trait LoopActionFactory {

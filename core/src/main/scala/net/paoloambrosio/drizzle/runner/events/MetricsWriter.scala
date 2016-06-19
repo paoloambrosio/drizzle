@@ -1,7 +1,5 @@
 package net.paoloambrosio.drizzle.runner.events
 
-import java.time.{Duration, OffsetDateTime}
-
 import akka.actor.{Actor, Props}
 import net.paoloambrosio.drizzle.metrics.{MetricsRepository, RuntimeInfo, TimedActionMetrics}
 
@@ -16,8 +14,6 @@ object MetricsWriter {
   * @param repository
   */
 class MetricsWriter(repository: MetricsRepository) extends Actor {
-
-  import MetricsWriter._
 
   // TODO How are we going to handle async writes?
   override def receive: Receive = {
