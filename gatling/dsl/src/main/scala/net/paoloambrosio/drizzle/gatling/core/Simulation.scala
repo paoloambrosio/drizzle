@@ -1,6 +1,6 @@
 package net.paoloambrosio.drizzle.gatling.core
 
-trait Simulation {
+trait Simulation extends ChainBuildingSupport {
 
   private var setUpBuilder = new SetUpBuilder()
 
