@@ -43,7 +43,8 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
   )
 
   protected def toDrizzle(injectionSteps: Seq[InjectionStep]): Seq[Duration] = injectionSteps flatMap {
-    case AtOnceInjection(users: Int) => verticalRamp(users)
+    case AtOnceInjection(users) => verticalRamp(users)
+    case RampInjection(users, duration) => linearRamp(users, duration)
     case _ => ???
   }
 

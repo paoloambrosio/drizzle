@@ -15,4 +15,8 @@ class LoadInjectionStepsFactorySpec extends FlatSpec with Matchers {
     verticalRamp(-3) shouldBe Stream.empty[Duration]
   }
 
+  "linearRamp" should "inject vusers linearly over time" in new LoadInjectionStepsFactory {
+    linearRamp(2, Duration.ofSeconds(3)) shouldBe Stream(Duration.ofMillis(1500), Duration.ofMillis(1500))
+  }
+
 }
