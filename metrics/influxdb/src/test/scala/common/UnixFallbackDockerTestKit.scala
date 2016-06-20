@@ -15,6 +15,9 @@ trait UnixFallbackDockerTestKit extends DockerTestKit { self: Suite =>
   // Wait a bit more when using dockerised services (five seconds to make the build more reliable on Circle-CI)
   override implicit def patienceConfig = PatienceConfig(timeout = 5 seconds)
 
+  // CI builds are slower and might need a bit more time to start containers
+  override def dockerInitPatienceInterval = PatienceConfig(timeout = 2 minutes, interval = 500 millis)
+
   override implicit val docker: Docker = {
     val builder = DockerClientConfig.createDefaultConfigBuilder()
     if (System.getenv("DOCKER_HOST") == null)
