@@ -1,14 +1,15 @@
-package net.paoloambrosio.drizzle.http.action
+package net.paoloambrosio.drizzle.http.akkahttp
 
 import java.net.URL
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ContentType, FormData, HttpHeader, HttpMethod, HttpMethods, HttpRequest, Uri}
 import akka.http.scaladsl.model.headers.{RawHeader, `Content-Type`, `User-Agent`}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import net.paoloambrosio.drizzle.core._
+import net.paoloambrosio.drizzle.http.{HttpActionBuilder, HttpActionFactory, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -65,8 +66,8 @@ trait AkkaHttpActionFactory extends HttpActionFactory {
       this
     }
 
-    override def apply(vars: SessionVariables): Future[(SessionVariables, Unit)] = {
-      Source.single(httpRequest).via(connectionFlow).runWith(Sink.head).map(_ => (vars, ()))
+    override def apply(vars: SessionVariables): Future[(SessionVariables, HttpResponse)] = {
+      Source.single(httpRequest).via(connectionFlow).runWith(Sink.head).map(r => (vars, new AkkaHttpResponse(r)))
     }
   }
 

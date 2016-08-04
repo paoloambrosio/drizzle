@@ -1,9 +1,10 @@
-package net.paoloambrosio.drizzle.http.action
+package net.paoloambrosio.drizzle.http.akkahttp
 
 import java.net.URL
 
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.client.WireMock._
+import net.paoloambrosio.drizzle.http.ning.NingHttpActionFactory
 import org.asynchttpclient.DefaultAsyncHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}

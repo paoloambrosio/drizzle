@@ -9,7 +9,7 @@ trait JavaTimeTimedActionFactory extends TimedActionFactory {
 
   def clock: Clock
 
-  override implicit def timedAction[T](f: TimedPart[T]): TimedAction[T] = {
+  override def timedAction[T](f: TimedPart[T]): TimedAction[T] = {
     scenarioContext: ScenarioContext => {
       val startTime = OffsetDateTime.now(clock)
       val nanoTime = System.nanoTime()

@@ -5,7 +5,7 @@ import java.time.Duration
 
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedPart
-import net.paoloambrosio.drizzle.http.action.HttpActionFactory
+import net.paoloambrosio.drizzle.http.HttpActionFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext

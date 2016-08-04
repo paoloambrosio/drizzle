@@ -5,11 +5,12 @@ import java.time.Duration
 
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
+import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedAction
 import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.HttpRequest._
 import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest => GatlingHttpRequest}
-import net.paoloambrosio.drizzle.http.action.HttpActionFactory
+import net.paoloambrosio.drizzle.http.{HttpActionFactory, HttpResponse}
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
 import scala.reflect.{ClassTag, classTag}
@@ -50,13 +51,14 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case GatlingHttpRequest(name, method, path, headers, formParams) => {
+    case r: GatlingHttpRequest => {
       val httpProtocol: HttpProtocol = extract[HttpProtocol](protocols)
-      val fullUrl = fullURL(httpProtocol.baseURLs, path)
-      val fullHeaders = httpProtocol.headers ++ headers
-      val actionBuilder = httpAction(method, fullUrl).headers(fullHeaders.toSeq)
-      val action = timedAction(if (!formParams.isEmpty) actionBuilder.entity(formParams) else actionBuilder)
-      Stream(ScenarioStep(Some(name), action))
+      val fullUrl = fullURL(httpProtocol.baseURLs, r.path)
+      val fullHeaders = httpProtocol.headers ++ r.headers
+      val actionBuilder = httpAction(r.method, fullUrl).headers(fullHeaders.toSeq)
+      val action: TimedAction[HttpResponse] = timedAction(if (!r.formParams.isEmpty) actionBuilder.entity(r.formParams) else actionBuilder)
+      r.checks.foldLeft(action)((a,c) => a.andThen(_.map { case (s,r) => c(s,r) }))
+      Stream(ScenarioStep(Some(r.name), action))
     }
     case _ => ???
   }

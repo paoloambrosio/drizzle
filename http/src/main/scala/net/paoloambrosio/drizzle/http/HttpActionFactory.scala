@@ -1,4 +1,4 @@
-package net.paoloambrosio.drizzle.http.action
+package net.paoloambrosio.drizzle.http
 
 import java.net.URL
 
@@ -10,7 +10,7 @@ trait HttpActionFactory {
   def httpPost(url: URL): HttpActionBuilder
 }
 
-trait HttpActionBuilder extends TimedPart[Unit] {
+trait HttpActionBuilder extends TimedPart[HttpResponse] {
 
   def headers(headers: Seq[(String, String)]): HttpActionBuilder
   def entity(params: Seq[(String, String)]): HttpActionBuilder

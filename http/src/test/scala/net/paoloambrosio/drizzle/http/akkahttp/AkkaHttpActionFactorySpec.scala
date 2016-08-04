@@ -1,4 +1,4 @@
-package net.paoloambrosio.drizzle.http.action
+package net.paoloambrosio.drizzle.http.akkahttp
 
 import java.net.URL
 
