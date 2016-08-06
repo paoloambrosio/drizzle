@@ -20,7 +20,9 @@ package object checks {
 
     override def actual(response: HttpResponse) = response.status
 
-    def is(expected: Integer): HttpCheck = buildCheck(r => if (r != expected) throw new Exception("Nope!")) // TODO
+    def is(expected: Integer): HttpCheck = buildCheck { r =>
+      if (r != expected) throw new Exception(s"Check failed: ${r} was not ${expected}") // TODO
+    }
 
   }
 
