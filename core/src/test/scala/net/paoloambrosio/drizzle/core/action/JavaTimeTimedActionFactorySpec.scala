@@ -13,7 +13,7 @@ class JavaTimeTimedActionFactorySpec extends FlatSpec
     with Matchers with ScalaFutures {
 
   "timedAction" should "record start and elapsed times" in new TestContext {
-    val action = timedAction(sessionVariables => Future.successful(sessionVariables))
+    val action = toScenarioAction(timedAction(sessionVariables => Future.successful((sessionVariables, ()))))
 
     val returnedTimers = action(passedContext).futureValue.latestAction.get
 

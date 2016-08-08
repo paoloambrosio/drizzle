@@ -5,11 +5,13 @@ import java.time.Duration
 
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
-import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedAction
+import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioContext, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.HttpRequest._
 import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest => GatlingHttpRequest}
-import net.paoloambrosio.drizzle.http.action.HttpActionFactory
+import net.paoloambrosio.drizzle.http.checks._
+import net.paoloambrosio.drizzle.http.{HttpActionFactory, HttpResponse}
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
 import scala.reflect.{ClassTag, classTag}
@@ -50,16 +52,25 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case GatlingHttpRequest(name, method, path, headers, formParams) => {
-      val httpProtocol: HttpProtocol = extract[HttpProtocol](protocols)
-      val fullUrl = fullURL(httpProtocol.baseURLs, path)
-      val fullHeaders = httpProtocol.headers ++ headers
-      val actionBuilder = httpAction(method, fullUrl).headers(fullHeaders.toSeq)
-      val action = if (!formParams.isEmpty) actionBuilder.entity(formParams).build() else actionBuilder.build()
-      Stream(ScenarioStep(Some(name), action))
+    case r: GatlingHttpRequest => {
+      val timedAction = timedGatlingAction(r, extract[HttpProtocol](protocols))
+      val reducedChecks = r.checks.map(_.tupled).reduceOption(_ andThen _)
+      val action = reducedChecks match {
+        case Some(c) => timedAction andThen (_ map c)
+        case None => timedAction
+      }
+      Stream(ScenarioStep(Some(r.name), action))
     }
     case _ => ???
   }
+
+  def timedGatlingAction(r: GatlingHttpRequest, httpProtocol: HttpProtocol): TimedAction[HttpResponse] = {
+    val fullUrl = fullURL(httpProtocol.baseURLs, r.path)
+    val fullHeaders = httpProtocol.headers ++ r.headers
+    val actionBuilder = httpAction(r.method, fullUrl).headers(fullHeaders.toSeq)
+    timedAction(if (!r.formParams.isEmpty) actionBuilder.entity(r.formParams) else actionBuilder)
+  }
+
 
   def httpAction(method: HttpMethod, url: URL) = method match {
     case Get => httpGet(url)

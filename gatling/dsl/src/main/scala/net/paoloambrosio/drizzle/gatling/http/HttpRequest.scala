@@ -1,6 +1,7 @@
 package net.paoloambrosio.drizzle.gatling.http
 
 import net.paoloambrosio.drizzle.gatling.core.Action
+import net.paoloambrosio.drizzle.http.checks.HttpCheck
 
 object HttpRequest {
 
@@ -14,11 +15,13 @@ case class HttpRequest(
   method: HttpRequest.HttpMethod,
   path: String,
   headers: Map[String, String] = Map.empty,
-  formParams: Seq[(String, String)] = Seq.empty
+  formParams: Seq[(String, String)] = Seq.empty,
+  checks: Seq[HttpCheck] = Seq.empty
 ) extends Action {
 
   def headers(extraHeaders: Map[String, String]) = copy(headers = headers ++ extraHeaders)
   def formParam(name: String, value: String) = copy(formParams = formParams :+ (name, value))
+  def check(extraChecks: HttpCheck*) = copy(checks = checks ++ extraChecks)
 }
 
 class HttpRequestFactory(name: String) {
