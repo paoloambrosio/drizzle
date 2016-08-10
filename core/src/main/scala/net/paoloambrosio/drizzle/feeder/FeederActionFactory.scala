@@ -1,8 +1,8 @@
 package net.paoloambrosio.drizzle.feeder
 
-import net.paoloambrosio.drizzle.core.{ScenarioAction, SessionVariables}
+import net.paoloambrosio.drizzle.core.ScenarioAction
 
 trait FeederActionFactory {
 
-  def feed(feeder: Iterator[SessionVariables]): ScenarioAction
+  def feed(feeder: Feeder): ScenarioAction
 }

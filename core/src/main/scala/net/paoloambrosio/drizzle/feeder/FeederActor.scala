@@ -5,7 +5,7 @@ import net.paoloambrosio.drizzle.core._
 
 object FeederActor {
 
-  case class FeedRequest(feeder: Iterator[SessionVariables])
+  case class FeedRequest(feeder: Feeder)
   case class FeedResponse(vars: Option[SessionVariables])
 
   def props = Props(new FeederActor)
