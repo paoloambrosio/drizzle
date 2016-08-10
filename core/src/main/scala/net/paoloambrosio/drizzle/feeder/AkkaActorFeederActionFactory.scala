@@ -17,7 +17,7 @@ trait AkkaActorFeederActionFactory extends FeederActionFactory {
 
   def feederActor: ActorRef
 
-  def feed(feeder: Iterator[SessionVariables]): ScenarioAction = { in: ScenarioContext =>
+  def feed(feeder: Feeder): ScenarioAction = { in: ScenarioContext =>
     implicit val timeout = durationToTimeout(feederTimeout)
     (feederActor ? FeedRequest(feeder)).mapTo[FeedResponse] flatMap {
       case FeedResponse(Some(vars)) =>

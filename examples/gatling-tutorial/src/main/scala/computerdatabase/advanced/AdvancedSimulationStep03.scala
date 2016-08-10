@@ -27,12 +27,12 @@ class AdvancedSimulationStep03 extends Simulation {
     // We need dynamic data so that all users don't play the same and we end up with a behavior completely different from the live system (caching, JIT...)
     // ==> Feeders!
 
-//    val feeder = csv("search.csv").random // default is queue, so for this test, we use random to avoid feeder starvation
+    val feeder = csv("search.csv").random // default is queue, so for this test, we use random to avoid feeder starvation
 
     val search = exec(http("Home")
       .get("/"))
       .pause(1)
-//      .feed(feeder) // every time a user passes here, a record is popped from the feeder and injected into the user's session
+      .feed(feeder) // every time a user passes here, a record is popped from the feeder and injected into the user's session
       .exec(http("Search")
         .get("/computers?f=${searchCriterion}") // use session data thanks to Gatling's EL
 //        .check(css("a:contains('${searchComputerName}')", "href").saveAs("computerURL"))

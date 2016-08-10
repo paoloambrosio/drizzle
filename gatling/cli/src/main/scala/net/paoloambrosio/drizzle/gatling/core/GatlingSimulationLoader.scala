@@ -6,17 +6,18 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedAction
-import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioContext, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.feeder.FeederActionFactory
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.HttpRequest._
 import net.paoloambrosio.drizzle.gatling.http.{HttpProtocol, HttpRequest => GatlingHttpRequest}
-import net.paoloambrosio.drizzle.http.checks._
 import net.paoloambrosio.drizzle.http.{HttpActionFactory, HttpResponse}
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
 import scala.reflect.{ClassTag, classTag}
 
-trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFactory {
+trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFactory
+    with FeederActionFactory {
     this: CoreActionFactory with HttpActionFactory =>
 
   def load(ref: String): DrizzleSimulation = {
@@ -52,6 +53,7 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(action: Action, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
     case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
+    case FeedingAction(feeder) => Stream(ScenarioStep(None, feed(feeder)))
     case r: GatlingHttpRequest => {
       val timedAction = timedGatlingAction(r, extract[HttpProtocol](protocols))
       val reducedChecks = r.checks.map(_.tupled).reduceOption(_ andThen _)
