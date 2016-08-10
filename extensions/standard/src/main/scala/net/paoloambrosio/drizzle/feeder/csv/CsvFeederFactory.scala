@@ -5,7 +5,7 @@ import net.paoloambrosio.drizzle.feeder.Feeder
 
 import scala.io.Source
 
-trait CsvFeederFactory {
+object CsvFeederFactory {
 
   def csv(source: Source): Feeder = CSVReader.open(source).iteratorWithHeaders
 

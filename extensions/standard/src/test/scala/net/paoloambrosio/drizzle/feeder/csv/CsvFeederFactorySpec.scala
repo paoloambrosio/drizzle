@@ -4,15 +4,17 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 
-class CsvFeederSpec extends FlatSpec with Matchers {
+class CsvFeederFactorySpec extends FlatSpec with Matchers {
 
-  it should "read an empty CSV file as an empty iterator" in new CsvFeederFactory {
+  import CsvFeederFactory._
+
+  it should "read an empty CSV file as an empty iterator" in {
     val csvSource = Source.fromString("")
 
     csv(csvSource).toList shouldBe Nil
   }
 
-  it should "read a CSV source with headers" in new CsvFeederFactory {
+  it should "read a CSV source with headers" in {
     val csvSource = Source.fromString(
       """|a,b
          |a1,b1

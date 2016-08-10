@@ -5,6 +5,7 @@ import java.time.Duration
 
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedPart
+import net.paoloambrosio.drizzle.feeder._
 import net.paoloambrosio.drizzle.http.HttpActionFactory
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -36,11 +37,13 @@ class GatlingSimulationLoaderSpec extends FlatSpec with Matchers {
     a [MalformedURLException] should be thrownBy fullURL(Seq.empty, "/")
   }
 
-  trait TestContext extends GatlingSimulationLoader with CoreActionFactory with HttpActionFactory {
+  trait TestContext extends GatlingSimulationLoader
+      with CoreActionFactory with HttpActionFactory with FeederActionFactory {
     implicit def ec: ExecutionContext = ???
     override def timedAction[T](f: TimedPart[T]) = ???
     override def pacing(duration: Duration) = ???
     override def thinkTime(duration: Duration) = ???
+    override def feed(feeder: Feeder) = ???
     def httpGet(url: URL) = ???
     def httpPost(url: URL) = ???
   }

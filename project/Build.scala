@@ -122,7 +122,7 @@ object DrizzleBuild extends Build {
 //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/dsl"),
     settings = commonSettings
-  ).dependsOn(httpExtensions)
+  ).dependsOn(httpExtensions, standardExtensions)
 
   lazy val gatlingCli =  Project(
     id = "gatling-cli",

@@ -1,5 +1,7 @@
 package net.paoloambrosio.drizzle.gatling.core
 
+import net.paoloambrosio.drizzle.feeder.Feeder
+
 import scala.concurrent.duration._
 
 trait ActionSequenceBuilder[T <: ActionSequenceBuilder[T]] {
@@ -14,4 +16,6 @@ trait ActionSequenceBuilder[T <: ActionSequenceBuilder[T]] {
 
   def pause(seconds: Int): T = pause(Duration(seconds, SECONDS))
   def pause(duration: Duration): T = exec(List(new PauseAction(duration)))
+
+  def feed(feeder: Feeder): T = exec(List(new FeedingAction(feeder)))
 }
