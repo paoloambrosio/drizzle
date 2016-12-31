@@ -17,7 +17,7 @@ class NingHttpActionFactorySpec extends TestKit(TestActorSystem())
   with FlatSpecLike with Matchers with BeforeAndAfterAll
   with ScalaFutures with WireMockSugar {
 
-  override implicit def patienceConfig = PatienceConfig(timeout = 1 second)
+  override implicit def patienceConfig = PatienceConfig(timeout = 2 second)
 
   val testSystem = system
 
