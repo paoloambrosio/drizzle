@@ -3,6 +3,18 @@ scala:
    - 2.11.8
 jdk:
   - oraclejdk8
+
+# Docker
 sudo: required
 services:
   - docker
+
+# http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+before_cache:
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt -name "*.lock" -delete
+
