@@ -10,21 +10,22 @@ object BuildSettings {
 }
 
 object Dependencies {
-  private val akkaV = "2.4.8"
+  private val akkaV = "2.4.16"
 
-  val akkaActor              = "com.typesafe.akka"     %% "akka-actor"               % akkaV
-  val akkaHttpCore           = "com.typesafe.akka"     %% "akka-http-core"           % akkaV
-  val akkaHttpExperimental   = "com.typesafe.akka"     %% "akka-http-experimental"   % akkaV
-  val asyncHttpClient        = "org.asynchttpclient"    % "async-http-client"        % "2.0.11"
-  val influxdbClient         = "com.paulgoldbaum"      %% "scala-influxdb-client"    % "0.5.0"
-  val scalaCsv               = "com.github.tototoshi"  %% "scala-csv"                % "1.3.3"
-  val wiremock               = "com.github.tomakehurst" % "wiremock"                 % "2.1.9"
 
-  val akkaTestkit            = "com.typesafe.akka"     %% "akka-testkit"             % akkaV
-  val akkaMockScheduler      = "com.miguno.akka"       %% "akka-mock-scheduler"      % "0.4.0"
-  val dockerTestKitScalaTest = "com.whisk"             %% "docker-testkit-scalatest" % "0.8.2"
-  val mockito                = "org.mockito"           % "mockito-core"             % "1.10.19"
-  val scalaTest              = "org.scalatest"         %% "scalatest"                % "3.0.0"
+  val akkaActor              = "com.typesafe.akka"     %% "akka-actor"                  % "2.4.16"
+  val akkaHttpCore           = "com.typesafe.akka"     %% "akka-http-core"              % "10.0.1"
+  val asyncHttpClient        = "org.asynchttpclient"    % "async-http-client"           % "2.0.24"
+  val influxdbClient         = "com.paulgoldbaum"      %% "scala-influxdb-client"       % "0.5.2"
+  val scalaCsv               = "com.github.tototoshi"  %% "scala-csv"                   % "1.3.4"
+  val wiremock               = "com.github.tomakehurst" % "wiremock"                    % "2.4.1"
+
+  val akkaTestkit            = "com.typesafe.akka"     %% "akka-testkit"                % "2.4.16"
+  val akkaMockScheduler      = "com.miguno.akka"       %% "akka-mock-scheduler"         % "0.5.0"
+  val dockerTestKitScalaTest = "com.whisk"             %% "docker-testkit-scalatest"    % "0.9.0-RC2"
+  val dockerTestKitSpotify   = "com.whisk"             %% "docker-testkit-impl-spotify" % "0.9.0-RC2"
+  val mockito                = "org.mockito"            % "mockito-core"                % "2.5.0"
+  val scalaTest              = "org.scalatest"         %% "scalatest"                   % "3.0.1"
 }
 
 object Resolvers {
@@ -46,13 +47,15 @@ object DrizzleBuild extends Build {
       akkaTestkit % Test,
       scalaTest % Test,
       mockito % Test
-    )
+    ),
+    fork in Test := true
   )
 
   val dockerTestKitSettings = Seq(
     resolvers ++= dockerTestKitResolvers,
     libraryDependencies ++= Seq(
-      dockerTestKitScalaTest % Test
+      dockerTestKitScalaTest % Test,
+      dockerTestKitSpotify % Test
     )
   )
 
@@ -78,7 +81,6 @@ object DrizzleBuild extends Build {
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
         akkaHttpCore,
-        akkaHttpExperimental,
         asyncHttpClient,
         wiremock % Test
       )
