@@ -13,7 +13,7 @@ import scala.concurrent.duration._
   */
 trait DrizzleDockerTestKit extends DockerTestKit { self: Suite =>
 
-  // Wait a bit more when using dockerised services (five seconds to make the build more reliable on Circle-CI)
+  // Wait a bit more when using dockerised services (five seconds to make the build more reliable on CI server)
   override implicit def patienceConfig = PatienceConfig(timeout = 5 seconds)
 
   override implicit val dockerFactory: DockerFactory =

@@ -15,8 +15,9 @@ import scala.concurrent.duration._
 class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with DrizzleDockerTestKit
   with DockerInfluxDBService {
 
-  lazy val influxDbHost = influxdbContainer.getIpAddresses().futureValue.head
-  lazy val influxdb = InfluxDB.connect(influxDbHost, InfluxDBAPIPort)
+  lazy val influxDbHost = dockerExecutor.host
+  lazy val influxDbPort = influxdbContainer.getPorts().futureValue.apply(InfluxDBAPIPort)
+  lazy val influxdb = InfluxDB.connect(influxDbHost, influxDbPort)
 
   private val TIME_OFFSET = ZoneOffset.ofHoursMinutes(2, 30)
 
@@ -36,8 +37,6 @@ class InfluxDbMetricsSpec extends FlatSpec with Matchers with ScalaFutures with 
       action = RuntimeInfo(Some("action"), "requestIdZ"),
       start = simulationRunStart,
       elapsedTime = 13 micros)
-
-    val x = influxDbMetrics
 
     influxDbMetrics.store(metrics).futureValue
 
