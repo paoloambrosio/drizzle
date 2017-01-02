@@ -7,11 +7,11 @@ import scala.concurrent.duration._
 trait ActionSequenceBuilder[T <: ActionSequenceBuilder[T]] {
 
   // Note: List and not Seq because of varargs and type erasure
-  def builderInstance(actions: List[Action]): T
-  def actions: List[Action]
+  def builderInstance(actions: List[GatlingAction]): T
+  def actions: List[GatlingAction]
 
-  def exec(newActions: List[Action]): T = builderInstance(actions ++ newActions)
-  def exec(newAction: Action): T = exec(List(newAction))
+  def exec(newActions: List[GatlingAction]): T = builderInstance(actions ++ newActions)
+  def exec(newAction: GatlingAction): T = exec(List(newAction))
   def exec(builders: ActionSequenceBuilder[_]*): T = exec(builders.map(_.actions).flatten.toList)
 
   def pause(seconds: Int): T = pause(Duration(seconds, SECONDS))
