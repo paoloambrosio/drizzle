@@ -1,8 +1,7 @@
 package net.paoloambrosio.drizzle.gatling.core.expression
 
-import net.paoloambrosio.drizzle.core.expression.Expression
+import net.paoloambrosio.drizzle.core.expression._
 
-import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
@@ -38,7 +37,7 @@ object ExpressionCompiler {
     case StaticPart(text) =>
       _ => Success(text)
     case DynamicPart(varName) =>
-      extractVariable[Any](varName).andThen(_.map(_.toString))
+      extractVariable[Any](varName).map(_.toString)
   }
 
 

@@ -1,9 +1,9 @@
 package net.paoloambrosio.drizzle.http.action
 
-import net.paoloambrosio.drizzle.core.{ScenarioAction, ScenarioContext}
+import net.paoloambrosio.drizzle.core.ScenarioAction
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory
 import net.paoloambrosio.drizzle.core.action.TimedActionFactory.{PostTimedPart, PreTimedPart, TimedPart}
-import net.paoloambrosio.drizzle.core.expression.Expression
+import net.paoloambrosio.drizzle.core.expression._
 import net.paoloambrosio.drizzle.http.checks.HttpCheck
 import net.paoloambrosio.drizzle.http.{HttpRequest, HttpResponse}
 
@@ -17,7 +17,7 @@ trait PostChecksActionFactory[T] extends HttpActionFactory { this: TimedActionFa
   }
 
   private def pre(requestEx: Expression[HttpRequest]): PreTimedPart[Try[T]] = {
-    requestEx.andThen(_.map(httpRequestToImplementation))
+    requestEx.map(httpRequestToImplementation)
   }
 
   private def timedPart: TimedPart[Try[T], HttpResponse] = {

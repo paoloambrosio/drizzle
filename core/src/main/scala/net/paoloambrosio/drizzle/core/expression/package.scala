@@ -9,4 +9,9 @@ package object expression {
   object Expression {
     def uninterpreted[T](t: T): Expression[T] = _ => Success(t)
   }
+
+  implicit class ExpressionOps[T](val expression: Expression[T]) extends AnyVal {
+    def map[U](f: T => U): Expression[U] = expression.andThen(_.map(f))
+  }
+
 }

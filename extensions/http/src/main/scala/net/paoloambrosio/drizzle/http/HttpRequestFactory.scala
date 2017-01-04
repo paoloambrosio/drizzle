@@ -1,14 +1,12 @@
 package net.paoloambrosio.drizzle.http
 
-import java.net.{URI, URL}
-
-import net.paoloambrosio.drizzle.core.expression.Expression
+import net.paoloambrosio.drizzle.core.expression._
 import net.paoloambrosio.drizzle.http.checks.HttpCheck
 
 object HttpRequestBuilder {
 
   def apply(stepNameEx: Expression[String], method: HttpMethod, uriEx: Expression[String]): HttpRequestBuilder =
-    new HttpRequestBuilder(stepNameEx, uriEx.andThen(_.map(HttpRequest(method, _))))
+    new HttpRequestBuilder(stepNameEx, uriEx.map(HttpRequest(method, _)))
 
 }
 
