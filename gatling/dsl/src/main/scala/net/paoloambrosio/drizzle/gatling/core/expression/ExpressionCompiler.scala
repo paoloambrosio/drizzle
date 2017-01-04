@@ -1,8 +1,8 @@
 package net.paoloambrosio.drizzle.gatling.core.expression
 
-import net.paoloambrosio.drizzle.core.ScenarioContext
 import net.paoloambrosio.drizzle.core.expression.Expression
 
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
@@ -11,8 +11,8 @@ object ExpressionCompiler {
   val valueMatcher = """\$\{([^\}]+)\}""".r
 
   /**
-    * TODO This is just horrible. Consider the Scala Standard Parser
-    * Combinator Library when something better is needed.
+    * Compiles a basic version of Gatling's Expression Language with variables
+    * expansion only.
     *
     * @param expression expression string to be evaluated
     * @tparam T
@@ -42,26 +42,18 @@ object ExpressionCompiler {
   }
 
 
-  def extractParts(expression: String): Seq[Part] = {
-    valueMatcher.findAllMatchIn(expression).toList match {
-      case Nil => Seq(StaticPart(expression))
-      case m :: Nil => {
-        // TODO for multiple dynamic parts
-        val prefix = m.before.toString
-        val prefixPart = if (prefix.isEmpty)
-          Nil
-        else
-          Seq(StaticPart(prefix))
-
-        val suffix = m.after.toString
-        val suffixPart = if (suffix.isEmpty)
-          Nil
-        else
-          Seq(StaticPart(suffix))
-
-        prefixPart ++ Seq(DynamicPart(m.group(1))) ++ suffixPart
+  def extractParts(expression: CharSequence): Seq[Part] = {
+    valueMatcher.findFirstMatchIn(expression) match {
+      case None =>
+        if (expression.length() > 0) Seq(StaticPart(expression.toString))
+        else Seq.empty
+      case Some(m) => {
+        val static = if (m.before.length() == 0) Seq.empty
+                     else Seq(StaticPart(m.before.toString))
+        val dynamic = Seq(DynamicPart(m.group(1)))
+        val remaining = m.after
+        static ++ dynamic ++ extractParts(remaining)
       }
-      case _ => throw new ExpressionCompilerException("not implemented")
     }
   }
 
@@ -82,10 +74,10 @@ object ExpressionCompiler {
   }
 
   def compose[T : ClassTag](expressions: Seq[Expression[String]]): Expression[T] = {
-    expressions.reduce((e1, e2) => sc => for {
+    expressions.reduceOption((e1, e2) => sc => for {
       o1 <- e1(sc)
       o2 <- e2(sc)
-    } yield o1 + o2).asInstanceOf[Expression[T]]
+    } yield o1 + o2).getOrElse(staticString("")).asInstanceOf[Expression[T]]
   }
 
   private def convert[T : ClassTag](v: Any): Try[T] = {
