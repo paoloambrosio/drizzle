@@ -1,7 +1,6 @@
 package io.gatling.core
 
 import net.paoloambrosio.drizzle.gatling.core._
-import net.paoloambrosio.drizzle.gatling.core.expression.ExpressionSupport
 import net.paoloambrosio.drizzle.gatling.core.feeders.StandardFeeders
 import net.paoloambrosio.drizzle.gatling.core.injection.InjectionSupport
 
