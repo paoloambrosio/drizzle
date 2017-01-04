@@ -3,20 +3,18 @@ package net.paoloambrosio.drizzle.core.action
 import java.time.{Clock, Duration, OffsetDateTime}
 
 import net.paoloambrosio.drizzle.core._
-import net.paoloambrosio.drizzle.core.action.TimedActionFactory.{TimedAction, TimedPart}
+import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedPart
 
 trait JavaTimeTimedActionFactory extends TimedActionFactory {
 
   def clock: Clock
 
-  override def timedAction[T](f: TimedPart[T]): TimedAction[T] = {
-    scenarioContext: ScenarioContext => {
-      val startTime = OffsetDateTime.now(clock)
-      val nanoTime = System.nanoTime()
-      f(scenarioContext.sessionVariables).map { case (sv, t) =>
-        val elapsedTime = Duration.ofNanos(System.nanoTime() - nanoTime)
-        (ScenarioContext(Some(ActionTimers(startTime, elapsedTime)), sv), t)
-      }
+  override def timed[I,O](f: TimedPart[I,O]): TimedPart[I,(ActionTimers, O)] = input => {
+    val startTime = OffsetDateTime.now(clock)
+    val nanoTime = System.nanoTime()
+    f(input).map { output =>
+      val elapsedTime = Duration.ofNanos(System.nanoTime() - nanoTime)
+      (ActionTimers(startTime, elapsedTime), output)
     }
   }
 }

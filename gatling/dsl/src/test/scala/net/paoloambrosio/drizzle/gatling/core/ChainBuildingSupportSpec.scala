@@ -15,8 +15,8 @@ class ChainBuildingSupportSpec extends FlatSpecLike with Matchers {
   // HELPERS
 
   trait TestContext extends ChainBuildingSupport {
-    case object Action1 extends Action
-    case object Action2 extends Action
-    case object Action3 extends Action
+    case object Action1 extends GatlingAction
+    case object Action2 extends GatlingAction
+    case object Action3 extends GatlingAction
   }
 }

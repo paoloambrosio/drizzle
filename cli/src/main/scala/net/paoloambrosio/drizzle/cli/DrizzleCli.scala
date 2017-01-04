@@ -10,7 +10,7 @@ import net.paoloambrosio.drizzle.core.ScenarioStreamFactory
 import net.paoloambrosio.drizzle.core.action.{AkkaSchedulerSleepActionFactory, CoreActionFactory, JavaTimeTimedActionFactory}
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
 import net.paoloambrosio.drizzle.feeder.{AkkaActorFeederActionFactory, FeederActor}
-import net.paoloambrosio.drizzle.http.akkahttp.AkkaHttpActionFactory
+import net.paoloambrosio.drizzle.http.action.AkkaHttpActionFactory
 import net.paoloambrosio.drizzle.runner.Orchestrator
 import net.paoloambrosio.drizzle.runner.events.MessagingEventSource
 

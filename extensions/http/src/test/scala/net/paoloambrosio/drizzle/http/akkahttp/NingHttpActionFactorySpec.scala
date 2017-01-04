@@ -1,10 +1,13 @@
 package net.paoloambrosio.drizzle.http.akkahttp
 
-import java.net.URL
-
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.client.WireMock._
-import net.paoloambrosio.drizzle.http.ning.NingHttpActionFactory
+import net.paoloambrosio.drizzle.core.ScenarioContext
+import net.paoloambrosio.drizzle.core.expression.Expression.uninterpreted
+import net.paoloambrosio.drizzle.http.HttpEntity.FormParams
+import net.paoloambrosio.drizzle.http.HttpMethod.Post
+import net.paoloambrosio.drizzle.http.HttpRequest
+import net.paoloambrosio.drizzle.http.action.NingHttpActionFactory
 import org.asynchttpclient.DefaultAsyncHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
@@ -27,17 +30,25 @@ class NingHttpActionFactorySpec extends TestKit(TestActorSystem())
   }
 
   it should "not pass content type if not specified" in new TestContext {
-    val action = httpPost(url("/"))
+    val action = httpRequest(uninterpreted(
+      HttpRequest(Post, url("/"))
+    ), Seq.empty)
 
-    whenReady(action(Map.empty)) { _ =>
+    whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/")).withoutHeader("Content-Type"))
     }
   }
 
   it should "send form parameters" in new TestContext {
-    val action = httpPost(url("/")).entity(Seq(("A","B"),("C",":)")))
+    val action = httpRequest(uninterpreted(
+      HttpRequest(
+        Post, url("/"),
+        Seq.empty,
+        FormParams(Seq(("A","B"),("C",":)")))
+      )
+    ), Seq.empty)
 
-    whenReady(action(Map.empty)) { _ =>
+    whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/"))
         .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
         .withRequestBody(equalTo("A=B&C=%3A%29"))
@@ -47,11 +58,11 @@ class NingHttpActionFactorySpec extends TestKit(TestActorSystem())
 
   // HELPERS
 
-  trait TestContext extends NingHttpActionFactory {
+  trait TestContext extends NingHttpActionFactory with TestDoubleTimedActionFactory {
     implicit val ec: ExecutionContext = new CallingThreadExecutionContext
     override val asyncHttpClient = new DefaultAsyncHttpClient
 
-    def url(path: String): URL = new URL(s"http://$mockServerHost:$mockServerPort$path")
+    def url(path: String) = s"http://$mockServerHost:$mockServerPort$path"
   }
 
 }

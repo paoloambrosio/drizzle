@@ -7,12 +7,11 @@ import scala.concurrent.{ExecutionContext, Future}
 object TimedActionFactory {
 
   /**
-    * Timed action, excluding postprocessing that is not part of it,
-    * like checks and variable extraction.
+    * Preprocessing step, not timed. Synchronous.
     *
-    * @tparam T internal output, for postprocessing
+    * @tparam T timed part input
     */
-  type TimedAction[T] = ScenarioContext => Future[(ScenarioContext, T)]
+  type PreTimedPart[I] = ScenarioContext => I
 
   /**
     * Part of the action that will be timed.
@@ -22,14 +21,14 @@ object TimedActionFactory {
     *
     * @tparam T internal output, for postprocessing
     */
-  type TimedPart[T] = SessionVariables => Future[(SessionVariables, T)]
+  type TimedPart[I,O] = I => Future[O]
 
   /**
-    * Postprocessing step, not timed. Synchronous.
+    * Postprocessing step, not timed for further postprocessing. Synchronous.
     *
-    * @tparam T internal output, for further postprocessing
+    * @tparam T timed part output
     */
-  type NotTimedPart[T] = (ScenarioContext, T) => (ScenarioContext, T)
+  type PostTimedPart[O] = (ScenarioContext, O) => (ScenarioContext, O)
 }
 
 trait TimedActionFactory {
@@ -37,8 +36,13 @@ trait TimedActionFactory {
 
   implicit def ec: ExecutionContext
 
-  def timedAction[T](f: TimedPart[T]): TimedAction[T]
+  final def timedAction[I,O](pre: PreTimedPart[I], f: TimedPart[I,O], post: PostTimedPart[O]): ScenarioAction = {
+    sc: ScenarioContext => {
+      pre.andThen(timed(f))(sc).map {
+        case (timers, output) => post(sc.copy(latestAction = Some(timers)), output)._1
+      }
+    }
+  }
 
-  final implicit def toScenarioAction[T](f: TimedAction[T]): ScenarioAction =
-    f.andThen(_.map(_._1))
+  def timed[I,O](f: TimedPart[I,O]): TimedPart[I,(ActionTimers, O)]
 }

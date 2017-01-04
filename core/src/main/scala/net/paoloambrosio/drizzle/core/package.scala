@@ -2,6 +2,8 @@ package net.paoloambrosio.drizzle
 
 import java.time.{Duration, OffsetDateTime}
 
+import net.paoloambrosio.drizzle.core.expression.Expression
+
 import scala.concurrent.Future
 
 package object core {
@@ -14,7 +16,7 @@ package object core {
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext]
 
-  case class ScenarioStep(name: Option[String], action: ScenarioAction)
+  case class ScenarioStep(name: Option[Expression[String]], action: ScenarioAction)
 
   case class Scenario(name: String, steps: Stream[ScenarioStep])
 

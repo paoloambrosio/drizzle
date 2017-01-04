@@ -1,6 +1,10 @@
 # Drizzle Performance Testing Framework
 
-It doesn't do anything yet.
+At the moment it can run some of Gatling's tutorial scripts:
+
+```
+sbt 'gatling-tutorial-example/runMain net.paoloambrosio.drizzle.gatling.cli.GatlingCli computerdatabase.BasicSimulation'
+```
 
 ## Build
 
