@@ -1,16 +1,14 @@
 package net.paoloambrosio.drizzle.http.akkahttp
 
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.client.WireMock._
-import net.paoloambrosio.drizzle.core.{ActionTimers, ScenarioContext}
-import net.paoloambrosio.drizzle.core.action.TimedActionFactory
-import net.paoloambrosio.drizzle.core.action.TimedActionFactory.TimedPart
+import net.paoloambrosio.drizzle.core.ScenarioContext
 import net.paoloambrosio.drizzle.core.expression.Expression.uninterpreted
+import net.paoloambrosio.drizzle.http.HttpEntity.FormParams
+import net.paoloambrosio.drizzle.http.HttpMethod.{Get, Post}
 import net.paoloambrosio.drizzle.http.HttpRequest
-import net.paoloambrosio.drizzle.http.HttpMethod._
-import net.paoloambrosio.drizzle.http.HttpEntity._
-import net.paoloambrosio.drizzle.http.action.AkkaHttpActionFactory
+import net.paoloambrosio.drizzle.http.action.AHCHttpActionFactory
+import org.asynchttpclient.DefaultAsyncHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem, WireMockSugar}
@@ -18,23 +16,25 @@ import utils.{CallingThreadExecutionContext, TestActorSystem, WireMockSugar}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
+class AHCHttpActionFactorySpec extends TestKit(TestActorSystem())
   with FlatSpecLike with Matchers with BeforeAndAfterAll
   with ScalaFutures with WireMockSugar {
 
-  override implicit def patienceConfig = PatienceConfig(timeout = 1 second)
+  override implicit def patienceConfig = PatienceConfig(timeout = 2 second)
 
+  val testHttpClient = new DefaultAsyncHttpClient
   val testSystem = system
 
   override def afterAll {
-    super.afterAll
     TestKit.shutdownActorSystem(system)
+    testHttpClient.close()
+    super.afterAll
   }
 
   it should "not pass content type if not specified" in new TestContext {
     val action = httpRequest(uninterpreted(
-        HttpRequest(Post, url("/"))
-      ), Seq.empty)
+      HttpRequest(Post, url("/"))
+    ), Seq.empty)
 
     whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/")).withoutHeader("Content-Type"))
@@ -67,10 +67,9 @@ class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
       )
     ), Seq.empty)
 
-
     whenReady(action(ScenarioContext())) { _ =>
       verify(postRequestedFor(urlEqualTo("/"))
-        .withHeader("Content-Type", equalTo("text/plain; charset=ISO-8859-1"))
+        .withHeader("Content-Type", equalTo("text/plain;charset=ISO-8859-1"))
         .withRequestBody(equalTo("A=B&C=%3A%29"))
       )
     }
@@ -93,10 +92,9 @@ class AkkaHttpActionFactorySpec extends TestKit(TestActorSystem())
 
   // HELPERS
 
-  trait TestContext extends AkkaHttpActionFactory with TestDoubleTimedActionFactory {
-    override implicit val system = testSystem
-    override implicit def materializer = ActorMaterializer()
-    override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
+  trait TestContext extends AHCHttpActionFactory with TestDoubleTimedActionFactory {
+    implicit val ec: ExecutionContext = new CallingThreadExecutionContext
+    override val asyncHttpClient = testHttpClient
 
     def url(path: String) = s"http://$mockServerHost:$mockServerPort$path"
   }
