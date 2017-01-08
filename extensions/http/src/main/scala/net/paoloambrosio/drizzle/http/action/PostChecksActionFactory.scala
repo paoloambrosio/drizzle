@@ -26,9 +26,14 @@ trait PostChecksActionFactory[T] extends HttpActionFactory { this: TimedActionFa
   }
 
   private def post(checks: Seq[HttpCheck]): PostTimedPart[HttpResponse] = {
-    Function.untupled(
-      checks.map(_.tupled).reduceOption(_ andThen _).getOrElse(identity)
-    )
+    def compose(h1: HttpCheck, h2: HttpCheck): HttpCheck = (sc, r) => for {
+      (sc1, r1) <- h1(sc, r)
+      (sc2, r2) <- h2(sc1, r1)
+    } yield (sc2, r2)
+
+    checks
+      .reduceOption((h1, h2) => compose(h1, h2))
+      .getOrElse((sc, r) => Success((sc, r)))
   }
 
   protected def httpRequestToImplementation(request: HttpRequest): T

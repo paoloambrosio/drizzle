@@ -3,6 +3,7 @@ package net.paoloambrosio.drizzle.core.action
 import net.paoloambrosio.drizzle.core._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object TimedActionFactory {
 
@@ -28,7 +29,7 @@ object TimedActionFactory {
     *
     * @tparam T timed part output
     */
-  type PostTimedPart[O] = (ScenarioContext, O) => (ScenarioContext, O)
+  type PostTimedPart[O] = (ScenarioContext, O) => Try[(ScenarioContext, O)]
 }
 
 trait TimedActionFactory {
@@ -38,8 +39,10 @@ trait TimedActionFactory {
 
   final def timedAction[I,O](pre: PreTimedPart[I], f: TimedPart[I,O], post: PostTimedPart[O]): ScenarioAction = {
     sc: ScenarioContext => {
-      pre.andThen(timed(f))(sc).map {
-        case (timers, output) => post(sc.copy(latestAction = Some(timers)), output)._1
+      pre.andThen(timed(f))(sc).flatMap {
+        case (timers, output) => Future.fromTry(
+          post(sc.copy(latestAction = Some(timers)), output).map(_._1)
+        )
       }
     }
   }

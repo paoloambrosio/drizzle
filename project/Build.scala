@@ -15,8 +15,8 @@ object Dependencies {
   val akkaActor              = "com.typesafe.akka"     %% "akka-actor"                  % "2.4.16"
   val asyncHttpClient        = "org.asynchttpclient"    % "async-http-client"           % "2.0.24"
   val influxdbClient         = "com.paulgoldbaum"      %% "scala-influxdb-client"       % "0.5.2"
+  val joddLagarto            = "org.jodd"               % "jodd-lagarto"                % "3.8.1"
   val scalaCsv               = "com.github.tototoshi"  %% "scala-csv"                   % "1.3.4"
-  val wiremock               = "com.github.tomakehurst" % "wiremock"                    % "2.5.0"
 
   val slf4j                  = "org.slf4j"              % "slf4j-simple"                % "1.7.22"
 
@@ -26,6 +26,7 @@ object Dependencies {
   val dockerTestKitSpotify   = "com.whisk"             %% "docker-testkit-impl-spotify" % "0.9.0-RC2"
   val mockito                = "org.mockito"            % "mockito-core"                % "2.5.5"
   val scalaTest              = "org.scalatest"         %% "scalatest"                   % "3.0.1"
+  val wiremock               = "com.github.tomakehurst" % "wiremock"                    % "2.5.0"
 }
 
 object Resolvers {
@@ -122,14 +123,18 @@ object DrizzleBuild extends Build {
     id = "gatling-dsl",
 //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/dsl"),
-    settings = commonSettings
+    settings = commonSettings ++ Seq(
+      libraryDependencies ++= Seq(
+        joddLagarto
+      )
+    )
   ).dependsOn(httpExtensions, standardExtensions)
 
   lazy val gatlingCli =  Project(
     id = "gatling-cli",
     //    version = s"${version}-2.1.7", // TODO
     base = file("gatling/cli"),
-    settings = commonSettings  ++ Seq(
+    settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       )
