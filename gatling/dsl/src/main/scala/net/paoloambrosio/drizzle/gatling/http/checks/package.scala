@@ -2,13 +2,18 @@ package net.paoloambrosio.drizzle.gatling.http
 
 import jodd.csselly.CSSelly
 import jodd.lagarto.dom.{LagartoDOMBuilder, NodeSelector}
+import net.paoloambrosio.drizzle.core.expression.Expression
 import net.paoloambrosio.drizzle.gatling.core.checks.CheckBuilder
+import net.paoloambrosio.drizzle.gatling.core.expression.ExpressionSupport
 import net.paoloambrosio.drizzle.http.HttpResponse
 import net.paoloambrosio.drizzle.http.checks.HttpCheck
 
 package object checks {
 
   trait HttpChecks {
+
+    import ExpressionSupport._
+
     val status = new HttpResponseStatusCheckBuilder
 
     def css(expression: String, attribute: String) = new HttpResponseCssCheckBuilder(expression, attribute)
@@ -25,19 +30,21 @@ package object checks {
     }
   }
 
-  class HttpResponseCssCheckBuilder(expression: String, attribute: String) {
+  class HttpResponseCssCheckBuilder(expression: Expression[String], attribute: String) {
 
     import scala.collection.JavaConversions._
 
-    val selectors = CSSelly.parse(expression)
-
     def saveAs(varName: String): HttpCheck = (sc, httpResponse) => {
-      val document = new LagartoDOMBuilder().parse(httpResponse.body)
-      val nodeSelector = new NodeSelector(document)
-      val first = nodeSelector.select(selectors).headOption
-      val newContext = first.flatMap( node =>
-        Option(node.getAttribute(attribute))
-      ).map( value =>
+      val maybeValue = expression(sc).toOption.flatMap { cssExp =>
+        val selectors = CSSelly.parse(cssExp)
+        val document = new LagartoDOMBuilder().parse(httpResponse.body)
+        val nodeSelector = new NodeSelector(document)
+        val first = nodeSelector.select(selectors).headOption
+        first.flatMap(node =>
+          Option(node.getAttribute(attribute))
+        )
+      }
+      val newContext = maybeValue.map(value =>
         sc.copy(sessionVariables = sc.sessionVariables.updated(varName, value))
       ).getOrElse(
         sc
