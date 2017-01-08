@@ -32,7 +32,7 @@ trait AHCHttpActionFactory extends PostChecksActionFactory[BoundRequestBuilder] 
   protected def executeRequest(builder: BoundRequestBuilder): Future[HttpResponse] = {
     val p = Promise[HttpResponse]()
     builder.execute(new AsyncCompletionHandler[Unit] {
-      override def onCompleted(r: Response) { p.success(new NingHttpResponse(r)) }
+      override def onCompleted(r: Response) { p.success(new AHCHttpResponse(r)) }
       override def onThrowable(t: Throwable) { p.failure(t) }
     })
     p.future
@@ -40,8 +40,8 @@ trait AHCHttpActionFactory extends PostChecksActionFactory[BoundRequestBuilder] 
 
 }
 
-class NingHttpResponse(response: Response) extends HttpResponse {
+class AHCHttpResponse(response: Response) extends HttpResponse {
 
-  override def status: Integer = response.getStatusCode
-
+  override def status = response.getStatusCode
+  override def body = response.getResponseBody
 }
