@@ -8,6 +8,8 @@ import net.paoloambrosio.drizzle.gatling.core.expression.ExpressionSupport
 import net.paoloambrosio.drizzle.http.HttpResponse
 import net.paoloambrosio.drizzle.http.checks.HttpCheck
 
+import scala.util.{Failure, Success, Try}
+
 package object checks {
 
   trait HttpChecks {
@@ -34,22 +36,21 @@ package object checks {
 
     import scala.collection.JavaConversions._
 
-    def saveAs(varName: String): HttpCheck = (sc, httpResponse) => {
-      val maybeValue = expression(sc).toOption.flatMap { cssExp =>
-        val selectors = CSSelly.parse(cssExp)
-        val document = new LagartoDOMBuilder().parse(httpResponse.body)
-        val nodeSelector = new NodeSelector(document)
-        val first = nodeSelector.select(selectors).headOption
-        first.flatMap(node =>
-          Option(node.getAttribute(attribute))
-        )
-      }
-      val newContext = maybeValue.map(value =>
-        sc.copy(sessionVariables = sc.sessionVariables.updated(varName, value))
-      ).getOrElse(
-        sc
-      )
-      (newContext, httpResponse)
+    def saveAs(varName: String): HttpCheck = (sc, httpResponse) => for {
+      cssSelector <- expression(sc)
+      document <- Try { new LagartoDOMBuilder().parse(httpResponse.body) }
+      selectors <- Try { CSSelly.parse(cssSelector) }
+      first <- new NodeSelector(document).select(selectors).headOption
+                  .toTry(new Exception("Node not found"))
+      value <- Option(first.getAttribute(attribute))
+                  .toTry(new Exception("Attribute not found"))
+      newContext = sc.copy(sessionVariables = sc.sessionVariables.updated(varName, value))
+    } yield (newContext, httpResponse)
+  }
+
+  implicit class OptionToTry[T](val o: Option[T]) extends AnyVal {
+    def toTry(t: => Throwable): Try[T] = {
+      o.map(Success(_)).getOrElse(Failure(t))
     }
   }
 }
