@@ -6,7 +6,7 @@ import org.asynchttpclient._
 
 import scala.concurrent.{Future, Promise}
 
-trait NingHttpActionFactory extends PostChecksActionFactory[BoundRequestBuilder] {
+trait AHCHttpActionFactory extends PostChecksActionFactory[BoundRequestBuilder] {
     this: TimedActionFactory =>
 
   protected def asyncHttpClient: AsyncHttpClient
