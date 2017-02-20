@@ -1,7 +1,7 @@
 package net.paoloambrosio.drizzle.core
 
 import net.paoloambrosio.drizzle.core.action.LoopActionFactory
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.Future

@@ -6,7 +6,7 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.expression.Expression
-import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioAction, ScenarioProfile, ScenarioStep, StepStream, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.feeder.FeederActionFactory
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.{HttpAction, HttpProtocol}
@@ -43,8 +43,13 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(scenario: GatlingScenario, protocols: Seq[Protocol]): DrizzleScenario = DrizzleScenario(
     name = scenario.name,
-    steps = scenario.actions.toStream.flatMap(toDrizzle(_, protocols))
+    steps = toDrizzle(scenario.actions, protocols)
   )
+
+  protected def toDrizzle(actions: Seq[GatlingAction], protocols: Seq[Protocol]): StepStream = {
+    // TODO handle dynamic ones as well
+    StepStream.static(actions.flatMap(toDrizzle(_, protocols)))
+  }
 
   protected def toDrizzle(injectionSteps: Seq[InjectionStep]): Seq[Duration] = injectionSteps flatMap {
     case AtOnceInjection(users) => verticalRamp(users)

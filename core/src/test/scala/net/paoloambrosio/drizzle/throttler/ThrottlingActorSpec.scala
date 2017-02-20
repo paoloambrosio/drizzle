@@ -8,7 +8,7 @@ import com.miguno.akka.testing.VirtualTime
 import net.paoloambrosio.drizzle.throttler.ThrottlingActor._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
 

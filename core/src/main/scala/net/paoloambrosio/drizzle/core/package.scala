@@ -3,6 +3,7 @@ package net.paoloambrosio.drizzle
 import java.time.{Duration, OffsetDateTime}
 
 import net.paoloambrosio.drizzle.core.expression.Expression
+import net.paoloambrosio.drizzle.utils.CDStream
 
 import scala.concurrent.Future
 
@@ -18,7 +19,10 @@ package object core {
 
   case class ScenarioStep(name: Option[Expression[String]], action: ScenarioAction)
 
-  case class Scenario(name: String, steps: Stream[ScenarioStep])
+  type StepStream = CDStream[ScenarioContext, ScenarioStep]
+  val StepStream = CDStream
+
+  case class Scenario(name: String, steps: StepStream)
 
   case class ScenarioProfile(scenario: Scenario, loadProfile: Seq[Duration])
 

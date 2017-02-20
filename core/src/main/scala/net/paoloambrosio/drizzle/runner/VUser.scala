@@ -7,6 +7,7 @@ import akka.pattern.pipe
 import net.paoloambrosio.drizzle.core._
 
 import scala.concurrent.ExecutionContext
+import net.paoloambrosio.drizzle.core.StepStream._ // FIXME automatic import?
 
 object VUser {
 
@@ -16,10 +17,10 @@ object VUser {
 
   sealed trait Data
   case object Uninitialized extends Data
-  final case class Initialised(orchestrator: ActorRef, steps: Stream[ScenarioStep]) extends Data
+  final case class Initialised(orchestrator: ActorRef, steps: StepStream) extends Data
 
   // IN
-  final case class Start(steps: Stream[ScenarioStep])
+  final case class Start(steps: StepStream)
   case object Stop
   private case class NextStep(context: ScenarioContext)
 
@@ -51,11 +52,16 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
   }
 
   when(Running) {
-    case Event(NextStep(context), s @ Initialised(_, nextStep #:: rest)) =>
-      execAction(nextStep, context)
-      stay using s.copy(steps = rest)
-    case Event(NextStep(context), Initialised(_, _)) =>
-      stop()
+    case Event(NextStep(sc), s @ Initialised(_, steps)) => {
+      implicit val isc = sc
+      steps match {
+        case nextStep @:: rest =>
+          execAction(nextStep, sc)
+          stay using s.copy(steps = rest)
+        case _ =>
+          stop()
+      }
+    }
     case Event(Stop, Initialised(_, _)) =>
       stop()
     case Event(Status.Failure(t), _) =>
