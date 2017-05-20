@@ -11,7 +11,6 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -40,8 +39,8 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     val steps = producedSteps(emptyScenario)
     verifyNoMoreInteractions(vUserEventSource)
 
-    // call the artificial step
-    steps(someContext).head.action(someContext).value
+    val artificialStep = steps.head
+    execute(artificialStep)
 
     verify(vUserEventSource, times(1)).fireVUserStarted()
   }
@@ -56,8 +55,8 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     ))
     verifyNoMoreInteractions(vUserEventSource)
 
-    // execute steps skipping the artificial step
-    executeStepChain(steps(someContext).tail)
+    val stepsSkippingArtificialOne = steps.tail
+    stepsSkippingArtificialOne.foreach(execute)
 
     val ordered = Mockito.inOrder(vUserEventSource)
     ordered.verify(vUserEventSource).fireVUserMetrics(ActionTimers(start, 1 milli))
@@ -73,9 +72,9 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
     lazy val emptyScenario = aScenario()
-    def aScenario(sa: ScenarioAction*) = Scenario("", StepStream.static(sa.map(ScenarioStep(None, _))))
+    def aScenario(sa: ScenarioAction*) = Scenario("", sa.map(ActionStep(None, _)))
 
-    def producedSteps(scenario: Scenario) = scenarioStream(Seq(
+    def producedSteps(scenario: Scenario): Seq[ScenarioStep] = scenarioStream(Seq(
       ScenarioProfile(scenario, Seq(1 second))
     )).head.steps
 
@@ -105,13 +104,9 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
       ScenarioContext(None)
     )
 
-    @tailrec
-    final def executeStepChain(steps: StepStream): Unit = {
-      val ss = steps(someContext)
-      if (!ss.isEmpty) {
-        ss.head.action(someContext).value.get.get // A bit nasty...
-        executeStepChain(ss.tail)
-      }
+    def execute(step: ScenarioStep): Unit = step match {
+      case ActionStep(_, action) => action(someContext).value
+      case _ => ???
     }
   }
 

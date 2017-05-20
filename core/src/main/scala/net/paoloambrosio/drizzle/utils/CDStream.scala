@@ -24,7 +24,7 @@ object CDStream {
     new CDStreamOperations[C, T](stream)
 
   class CDStreamOperations[C, T](cds: => CDStream[C, T]) {
-    def @::(hd: T): CDStream[C, T] = new StaticCDStream(hd, cds)
+    def @::(hd: C => T): CDStream[C, T] = new StaticCDStream(hd, cds)
     def @:::(prefix: CDStream[C, T]): CDStream[C, T] = prefix append cds
   }
 
@@ -48,17 +48,17 @@ object CDStream {
     override def map[V](f: T => V): CDStream[C, V] = empty[C ,V]
   }
 
-  def static[C, T](xs: T*): CDStream[C, T] = static(xs.toIterable)
+  def static[C, T](xs: (C => T)*): CDStream[C, T] = static(xs.toIterable)
 
-  def static[C, T](it: Iterable[T]): CDStream[C, T] = it.toStream match {
+  def static[C, T](it: Iterable[C => T]): CDStream[C, T] = it.toStream match {
     case hd #:: tail => new StaticCDStream(hd, static(tail))
     case _ => empty[C, T]
   }
 
-  private class StaticCDStream[C, T](hd: T, tl: CDStream[C, T]) extends CDStream[C, T] {
+  private class StaticCDStream[C, T](hd: C => T, tl: CDStream[C, T]) extends CDStream[C, T] {
     override def apply(c: C) = new CDStreamEntry[C, T] {
       override val isEmpty = false
-      override def head = hd
+      override def head = hd(c)
       override def tail = tl
     }
 
@@ -66,31 +66,33 @@ object CDStream {
       new StaticCDStream(hd, tl append rest)
 
     override def map[V](f: T => V): CDStream[C, V] =
-      new StaticCDStream[C, V](f(hd), tl.map(f)) // TODO lazy
+      new StaticCDStream[C, V](hd.andThen(f), tl.map(f)) // TODO lazy
   }
 
   /**
     * Dynamically generate CDStream based on context
     */
 
-  def loop[C, T](check: C => Boolean, body: CDStream[C, T]): CDStream[C, T] =
-    dynamic(c => if (check(c)) Some(body) else None, true)
+  def loop[C, T](preFn: C => C, check: C => Boolean)(body: CDStream[C, T]): CDStream[C, T] =
+    dynamic(preFn, c => if (check(c)) Some(body) else None, true)
 
-  def conditional[C, T](check: C => Boolean, body: CDStream[C, T]): CDStream[C, T] =
-    dynamic(c => if (check(c)) Some(body) else None, false)
+  def conditional[C, T](preFn: C => C, check: C => Boolean)(body: CDStream[C, T]): CDStream[C, T] =
+    dynamic(preFn, c => if (check(c)) Some(body) else None, false)
 
-  private def dynamic[C, T](gen: C => Option[CDStream[C, T]], loop: Boolean): CDStream[C, T] = new DynamicCDStream(gen, loop, empty)
+  private def dynamic[C, T](preFn: C => C, gen: C => Option[CDStream[C, T]], loop: Boolean): CDStream[C, T] =
+    new DynamicCDStream(preFn, gen, loop, empty)
 
-  class DynamicCDStream[C, T](gen: C => Option[CDStream[C, T]], loop: Boolean, next: CDStream[C, T]) extends CDStream[C, T] {
+  private class DynamicCDStream[C, T](preFn: C => C, gen: C => Option[CDStream[C, T]], loop: Boolean, next: CDStream[C, T]) extends CDStream[C, T] {
     override def apply(c: C): CDStreamEntry[C, T] = {
       val tl = if (loop) this else this.next
-      (gen(c) map (_ @::: tl) getOrElse next)(c)
+      val c2 = preFn(c)
+      (gen(c2) map (_ @::: tl) getOrElse next)(c2)
     }
 
     override def append(rest: => CDStream[C, T]): CDStream[C, T] =
-      new DynamicCDStream(gen, loop, next append rest)
+      new DynamicCDStream(preFn, gen, loop, next append rest)
 
     override def map[V](f: T => V): CDStream[C, V] =
-      new DynamicCDStream(gen.andThen(_ map (_ map f)), loop, next map f)
+      new DynamicCDStream(preFn, gen.andThen(_ map (_ map f)), loop, next map f)
   }
 }

@@ -6,47 +6,65 @@ class CDStreamSpec extends FlatSpec with Matchers {
 
   import CDStream._
 
-  val anyContext = 42
+  val f: Int => Int => String = x => c => (c + x).toString
+  def constant[A](a: A): Int => A = _ => a
 
   it can "be built statically" in {
-    val cds = static[Int, String]("1", "2")
+    val cds = static[Int, String](f(1), f(2))
 
-    cds(anyContext).head shouldBe "1"
-    cds(anyContext).tail(anyContext).head shouldBe "2"
+    val entry = cds(10)
+    entry.head shouldBe "11"
+    entry.tail(20).head shouldBe "22"
   }
 
   it can "be built by concatenation" in {
-    val cds = "1" @:: "2" @:: CDStream.empty[Int, String] // CDStream needed because empty is a ScalaTest matcher
+    val cds = f(1) @:: f(2) @:: CDStream.empty[Int, String] // CDStream needed because empty is a ScalaTest matcher
 
-    cds(anyContext).head shouldBe "1"
-    cds(anyContext).tail(anyContext).head shouldBe "2"
+    val entry = cds(10)
+    entry.head shouldBe "11"
+    entry.tail(20).head shouldBe "22"
   }
 
   it should "match with implicit context" in {
-    implicit val c = anyContext
+    implicit val c = 10
 
-    static[Int, String]("1", "2") match {
+    static[Int, String](f(1), f(2)) match {
       case hd1 @:: hd2 @:: rest =>
-        hd1 shouldBe "1"
-        hd2 shouldBe "2"
+        hd1 shouldBe "11"
+        hd2 shouldBe "12"
       case _ => fail("did not match")
     }
   }
 
-  "loop" should "loop on body if check passed" in {
+  "loop" should "execute the body if check is passed" in {
     val cds = loop(
-      (c: Int) => c == 0,
-      "1" @:: "2" @:: CDStream.empty[Int, String]
-    ) @::: "3" @:: CDStream.empty[Int, String]
+      identity[Int],
+      (c: Int) => c == 0
+    )(
+      f(1) @:: f(2) @:: CDStream.empty[Int, String]
+    ) @::: f(3) @:: CDStream.empty[Int, String]
 
-    evaluate(cds, Seq(0, 0, 0, 1, 1)) shouldBe Seq("1", "2", "1", "2", "3")
+    evaluate(cds, Seq(0, 0, 0, 1, 1)) shouldBe Seq("1", "2", "1", "3", "4")
   }
 
-  "doIf" should "execute body only if check passed" in {
+  it should "apply the pre-function to the context at each loop" in {
     val cds = loop(
-      (c: Int) => c == 0,
-      "1" @:: "2" @:: CDStream.empty[Int, String]
-    ) @::: "3" @:: CDStream.empty[Int, String]
+      (c: Int) => c - 3,
+      (c: Int) => c == 0
+    )(
+      f(10) @:: f(20) @:: CDStream.empty[Int, String]
+    ) @::: f(30) @:: CDStream.empty[Int, String]
+
+    evaluate(cds, Seq(3, 3, 7)) shouldBe Seq("10", "23", "34")
+  }
+
+  "conditional" should "execute body only if check passed" in {
+    val cds = loop(
+      (c: Int) => c,
+      (c: Int) => c == 0
+    )(
+      constant("1") @:: constant("2") @:: CDStream.empty[Int, String]
+    ) @::: constant("3") @:: CDStream.empty[Int, String]
 
     evaluate(cds, Seq(1)) shouldBe Seq("3")
     evaluate(cds, Seq(0, 1, 1)) shouldBe Seq("1", "2", "3")
@@ -54,9 +72,11 @@ class CDStreamSpec extends FlatSpec with Matchers {
 
   "map" should "transform content" in {
     val cds = loop(
-      (c: Int) => c == 0,
-      1 @:: 2 @:: CDStream.empty[Int, Int]
-    ) @::: 3 @:: CDStream.empty[Int, Int]
+      (c: Int) => c,
+      (c: Int) => c == 0
+    )(
+      constant(1) @:: constant(2) @:: CDStream.empty[Int, Int]
+    ) @::: constant(3) @:: CDStream.empty[Int, Int]
 
     evaluate(cds.map(_.toString), Seq(0, 1, 1)) shouldBe Seq("1", "2", "3")
   }

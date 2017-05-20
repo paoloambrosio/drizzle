@@ -5,9 +5,9 @@ import java.time.Clock
 import akka.actor._
 import akka.pattern.pipe
 import net.paoloambrosio.drizzle.core._
+import net.paoloambrosio.drizzle.core.StepStream.@::
 
 import scala.concurrent.ExecutionContext
-import net.paoloambrosio.drizzle.core.StepStream._ // FIXME automatic import?
 
 object VUser {
 
@@ -55,8 +55,8 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
     case Event(NextStep(sc), s @ Initialised(_, steps)) => {
       implicit val isc = sc
       steps match {
-        case nextStep @:: rest =>
-          execAction(nextStep, sc)
+        case actionExecutor @:: rest =>
+          exec(actionExecutor)
           stay using s.copy(steps = rest)
         case _ =>
           stop()
@@ -77,7 +77,7 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
 
   private def initialContext = ScenarioContext(None)
 
-  private def execAction(step: ScenarioStep, beginContext: ScenarioContext) = {
-    step.action(beginContext) map (NextStep(_)) pipeTo self
+  private def exec(actionExecutor: ActionExecutor): Unit = {
+    actionExecutor.action() map (NextStep(_)) pipeTo self
   }
 }

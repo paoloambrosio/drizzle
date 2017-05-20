@@ -73,7 +73,7 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
   trait TestContext {
 
-    def SomeScenario(sa: ScenarioAction*) = Scenario("", StepStream.static(sa.map(ScenarioStep(None, _))))
+    def SomeScenario(sa: ScenarioAction*) = Scenario("", sa.map(a => ActionStep(None, a)))
 
     val vUserEventSource = mock[VUserEventSource]
 

@@ -5,6 +5,7 @@ import java.time.Clock
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
+import net.paoloambrosio.drizzle.utils.CDStream
 
 object Orchestrator {
 
@@ -63,8 +64,18 @@ class Orchestrator(clock: Clock, vuserProps: Props, vUserEventSource: VUserEvent
   private def startNewVUser(scenario: Scenario): ActorRef = {
     val vuser = context.actorOf(vuserProps)
     vUserEventSource.fireVUserCreated()
-    vuser ! VUser.Start(scenario.steps)
+    val stepStream = toStepStream(scenario.steps)
+    vuser ! VUser.Start(stepStream)
     vuser
+  }
+
+  // TODO move somewhere else (like a factory trait)
+  def toStepStream(steps: Seq[ScenarioStep]): StepStream = {
+    steps.map {
+      case s: ActionStep => CDStream.static((c: ScenarioContext) => ActionExecutor(s.name.map(_.apply(c).get), () => s.action(c)))
+//      case s: LoopStep =>
+//      case s: ConditionalStep =>
+    }.foldLeft(CDStream.empty[ScenarioContext, ActionExecutor])((h,t) => h.append(t))
   }
 
 }

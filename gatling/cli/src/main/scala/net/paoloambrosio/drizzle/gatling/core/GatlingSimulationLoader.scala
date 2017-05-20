@@ -6,7 +6,7 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.expression.Expression
-import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioAction, ScenarioProfile, ScenarioStep, StepStream, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.{ActionStep, LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.feeder.FeederActionFactory
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.{HttpAction, HttpProtocol}
@@ -46,9 +46,9 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
     steps = toDrizzle(scenario.actions, protocols)
   )
 
-  protected def toDrizzle(actions: Seq[GatlingAction], protocols: Seq[Protocol]): StepStream = {
+  protected def toDrizzle(actions: Seq[GatlingAction], protocols: Seq[Protocol]): Seq[ScenarioStep] = {
     // TODO handle dynamic ones as well
-    StepStream.static(actions.flatMap(toDrizzle(_, protocols)))
+    actions.map(toDrizzle(_, protocols))
   }
 
   protected def toDrizzle(injectionSteps: Seq[InjectionStep]): Seq[Duration] = injectionSteps flatMap {
@@ -57,13 +57,13 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
     case _ => ???
   }
 
-  protected def toDrizzle(action: GatlingAction, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
-    case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case FeedingAction(feeder) => Stream(ScenarioStep(None, feed(feeder)))
+  protected def toDrizzle(action: GatlingAction, protocols: Seq[Protocol]): ScenarioStep = action match {
+    case PauseAction(duration) => ActionStep(None, thinkTime(duration))
+    case FeedingAction(feeder) => ActionStep(None, feed(feeder))
     case HttpAction(hrb) => {
       val requestEx = applyProtocol(hrb.requestEx, extract[HttpProtocol](protocols))
       val action = httpRequest(requestEx, hrb.checks)
-      Stream(ScenarioStep(Some(hrb.stepNameEx), action))
+      ActionStep(Some(hrb.stepNameEx), action)
     }
     case _ => ???
   }

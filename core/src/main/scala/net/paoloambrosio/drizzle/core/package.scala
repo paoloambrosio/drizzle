@@ -15,14 +15,19 @@ package object core {
 
   case class ScenarioContext(latestAction: Option[ActionTimers] = None, sessionVariables: SessionVariables = Map.empty)
 
-  type ScenarioAction = ScenarioContext => Future[ScenarioContext]
+  type ScenarioAction = ScenarioContext => Future[ScenarioContext] //
 
-  case class ScenarioStep(name: Option[Expression[String]], action: ScenarioAction)
+  sealed trait ScenarioStep
+  case class ActionStep(name: Option[Expression[String]], action: ScenarioAction) extends ScenarioStep
+//  case class LoopStep(condition: ScenarioContext => Boolean, body: StepChain) extends ScenarioStep
+//  case class ConditionalStep(condition: ScenarioContext => Boolean, body: StepChain) extends ScenarioStep
 
-  type StepStream = CDStream[ScenarioContext, ScenarioStep]
+  case class ActionExecutor(name: Option[String], action: () => Future[ScenarioContext])
+
+  type StepStream = CDStream[ScenarioContext, ActionExecutor]
   val StepStream = CDStream
 
-  case class Scenario(name: String, steps: StepStream)
+  case class Scenario(name: String, steps: Seq[ScenarioStep])
 
   case class ScenarioProfile(scenario: Scenario, loadProfile: Seq[Duration])
 

@@ -6,6 +6,7 @@ import akka.testkit._
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.runner.VUser._
 import net.paoloambrosio.drizzle.core.StepStream
+import net.paoloambrosio.drizzle.utils.CDStream
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
 
@@ -72,7 +73,9 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
     lazy val vuser = TestFSMRef(new VUser(clock), testActor)
 
-    def steps(actions: ScenarioAction*): StepStream = StepStream.static(actions.map(ScenarioStep(None, _)))
+    def steps(sa: ScenarioAction*): StepStream = CDStream.static[ScenarioContext, ActionExecutor](
+      sa.map(a => (c: ScenarioContext) => ActionExecutor(None, () => a(c)))
+    )
 
     val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
 

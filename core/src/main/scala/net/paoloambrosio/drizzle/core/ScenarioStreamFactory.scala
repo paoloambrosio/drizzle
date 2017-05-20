@@ -25,7 +25,7 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
 
   private def scenarioStream(sp: ScenarioProfile): Seq[Scenario] = {
     startDelays(sp.loadProfile).map(startDelay => {
-      sp.scenario.copy(steps = initialDelayStep(startDelay) @:: wrapSendingMetrics(sp.scenario.steps))
+      sp.scenario.copy(steps = initialDelayStep(startDelay) +: wrapSendingMetrics(sp.scenario.steps))
     })
   }
 
@@ -34,7 +34,7 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
   }
 
   private def initialDelayStep(startDelay: Duration) = {
-    ScenarioStep(None, initialDelayAction(startDelay))
+    ActionStep(None, initialDelayAction(startDelay))
   }
 
   private def initialDelayAction(startDelay: Duration) = thinkTime(startDelay) andThen { out =>
@@ -42,8 +42,10 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
     out
   }
 
-  private def wrapSendingMetrics(steps: StepStream) = steps.map { s =>
-    s.copy(action = wrapActionSendingMetrics(s.action))
+  private def wrapSendingMetrics(steps: Seq[ScenarioStep]): Seq[ScenarioStep] = steps.map {
+    case s: ActionStep => s.copy(action = wrapActionSendingMetrics(s.action))
+//    case s: LoopStep =>
+//    case s: ConditionalStep =>
   }
 
   private def wrapActionSendingMetrics(action: ScenarioAction) = action andThen { out =>
