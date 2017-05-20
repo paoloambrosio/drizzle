@@ -85,7 +85,7 @@ class HttpChecksSpec extends FlatSpecLike with Matchers with TryValues {
 
   trait TestContext {
     def responseWithBody(s: String) = new HttpResponse {
-      override def status: Integer = ???
+      override def status: Int = ???
       override val body: String = s
     }
   }

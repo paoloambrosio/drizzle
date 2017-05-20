@@ -44,8 +44,8 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
 
   private def wrapSendingMetrics(steps: Seq[ScenarioStep]): Seq[ScenarioStep] = steps.map {
     case s: ActionStep => s.copy(action = wrapActionSendingMetrics(s.action))
-//    case s: LoopStep =>
-//    case s: ConditionalStep =>
+    case s: LoopStep => s.copy(body = wrapSendingMetrics(s.body))
+    case s: ConditionalStep => s.copy(body = wrapSendingMetrics(s.body))
   }
 
   private def wrapActionSendingMetrics(action: ScenarioAction) = action andThen { out =>

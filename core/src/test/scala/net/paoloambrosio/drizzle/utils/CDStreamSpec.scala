@@ -38,8 +38,7 @@ class CDStreamSpec extends FlatSpec with Matchers {
 
   "loop" should "execute the body if check is passed" in {
     val cds = loop(
-      identity[Int],
-      (c: Int) => c == 0
+      (c: Int) => (c, c == 0)
     )(
       f(1) @:: f(2) @:: CDStream.empty[Int, String]
     ) @::: f(3) @:: CDStream.empty[Int, String]
@@ -47,10 +46,9 @@ class CDStreamSpec extends FlatSpec with Matchers {
     evaluate(cds, Seq(0, 0, 0, 1, 1)) shouldBe Seq("1", "2", "1", "3", "4")
   }
 
-  it should "apply the pre-function to the context at each loop" in {
+  it should "propagate context changes in the check" in {
     val cds = loop(
-      (c: Int) => c - 3,
-      (c: Int) => c == 0
+      (c: Int) => (c - 3, c < 5)
     )(
       f(10) @:: f(20) @:: CDStream.empty[Int, String]
     ) @::: f(30) @:: CDStream.empty[Int, String]
@@ -60,8 +58,7 @@ class CDStreamSpec extends FlatSpec with Matchers {
 
   "conditional" should "execute body only if check passed" in {
     val cds = loop(
-      (c: Int) => c,
-      (c: Int) => c == 0
+      (c: Int) => (c, c == 0)
     )(
       constant("1") @:: constant("2") @:: CDStream.empty[Int, String]
     ) @::: constant("3") @:: CDStream.empty[Int, String]
@@ -72,8 +69,7 @@ class CDStreamSpec extends FlatSpec with Matchers {
 
   "map" should "transform content" in {
     val cds = loop(
-      (c: Int) => c,
-      (c: Int) => c == 0
+      (c: Int) => (c, c == 0)
     )(
       constant(1) @:: constant(2) @:: CDStream.empty[Int, Int]
     ) @::: constant(3) @:: CDStream.empty[Int, Int]

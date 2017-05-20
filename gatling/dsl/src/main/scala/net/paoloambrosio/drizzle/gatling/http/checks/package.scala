@@ -12,9 +12,7 @@ import scala.util.{Failure, Success, Try}
 
 package object checks {
 
-  trait HttpChecks {
-
-    import ExpressionSupport._
+  trait HttpChecks extends ExpressionSupport {
 
     val status = new HttpResponseStatusCheckBuilder
 
@@ -23,12 +21,13 @@ package object checks {
 
   trait HttpCheckBuilder[T] extends CheckBuilder[HttpResponse, T]
 
-  class HttpResponseStatusCheckBuilder extends HttpCheckBuilder[Integer] {
+  class HttpResponseStatusCheckBuilder extends HttpCheckBuilder[Int] {
 
     override def actual(response: HttpResponse) = response.status
 
-    override def is(expected: Integer): HttpCheck = buildCheck { r =>
-      if (r != expected) throw new Exception(s"Check failed: ${r} was not ${expected}") // TODO
+    // TODO Expression[Int]
+    override def is(expected: Int): HttpCheck = buildCheck { r =>
+      if (r != expected) throw new Exception(s"Check failed: ${r} was not ${expected}")
     }
   }
 

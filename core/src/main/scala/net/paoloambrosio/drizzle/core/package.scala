@@ -19,8 +19,8 @@ package object core {
 
   sealed trait ScenarioStep
   case class ActionStep(name: Option[Expression[String]], action: ScenarioAction) extends ScenarioStep
-//  case class LoopStep(condition: ScenarioContext => Boolean, body: StepChain) extends ScenarioStep
-//  case class ConditionalStep(condition: ScenarioContext => Boolean, body: StepChain) extends ScenarioStep
+  case class LoopStep(condition: ScenarioContext => (ScenarioContext, Boolean), body: Seq[ScenarioStep]) extends ScenarioStep
+  case class ConditionalStep(condition: ScenarioContext => Boolean, body: Seq[ScenarioStep]) extends ScenarioStep
 
   case class ActionExecutor(name: Option[String], action: () => Future[ScenarioContext])
 

@@ -73,8 +73,8 @@ class Orchestrator(clock: Clock, vuserProps: Props, vUserEventSource: VUserEvent
   def toStepStream(steps: Seq[ScenarioStep]): StepStream = {
     steps.map {
       case s: ActionStep => CDStream.static((c: ScenarioContext) => ActionExecutor(s.name.map(_.apply(c).get), () => s.action(c)))
-//      case s: LoopStep =>
-//      case s: ConditionalStep =>
+      case s: LoopStep => CDStream.loop(s.condition)(toStepStream(s.body))
+      case s: ConditionalStep => CDStream.conditional(s.condition)(toStepStream(s.body))
     }.foldLeft(CDStream.empty[ScenarioContext, ActionExecutor])((h,t) => h.append(t))
   }
 
