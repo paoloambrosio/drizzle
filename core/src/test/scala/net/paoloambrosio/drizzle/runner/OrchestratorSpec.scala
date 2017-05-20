@@ -7,8 +7,9 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import net.paoloambrosio.drizzle.core._
 import net.paoloambrosio.drizzle.core.events.VUserEventSource
 import net.paoloambrosio.drizzle.runner.Orchestrator._
+import net.paoloambrosio.drizzle.core.StepStream
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
 
@@ -72,7 +73,7 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
   trait TestContext {
 
-    def SomeScenario(sa: ScenarioAction*) = Scenario("", sa.map(ScenarioStep(None, _)).toStream)
+    def SomeScenario(sa: ScenarioAction*) = Scenario("", sa.map(a => ActionStep(None, a)))
 
     val vUserEventSource = mock[VUserEventSource]
 
@@ -89,7 +90,7 @@ class OrchestratorSpec extends TestKit(TestActorSystem()) with ImplicitSender
       }
     })
 
-    case class StartedVUser(ref: ActorRef, steps: Stream[ScenarioStep])
+    case class StartedVUser(ref: ActorRef, steps: StepStream)
 
     var startedVusers = Set.empty[StartedVUser]
     def startedVuserRefs = startedVusers.map(_.ref)

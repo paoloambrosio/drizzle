@@ -19,41 +19,34 @@ import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import scala.concurrent.duration._
 
-class AdvancedSimulationStep01 extends Simulation {
+class AdvancedSimulationStep04 extends Simulation {
 
-  // Let's split this big scenario into composable business processes, like one would do with PageObject pattern with Selenium
-
-  // object are native Scala singletons
   object Search {
 
-    val search = exec(http("Home") // let's give proper names, they are displayed in the reports, and used as keys
+    val feeder = csv("search.csv").random
+
+    val search = exec(http("Home")
       .get("/"))
-      .pause(1) // let's set the pauses to 1 sec for demo purpose
+      .pause(1)
+      .feed(feeder)
       .exec(http("Search")
-        .get("/computers?f=macbook"))
+        .get("/computers?f=${searchCriterion}")
+        .check(css("a:contains('${searchComputerName}')", "href").saveAs("computerURL")))
       .pause(1)
       .exec(http("Select")
-        .get("/computers/6"))
+        .get("${computerURL}")
+        .check(status.is(200)))
       .pause(1)
   }
 
   object Browse {
 
-    val browse = exec(http("Home")
-      .get("/"))
-      .pause(2)
-      .exec(http("Page 1")
-        .get("/computers?p=1"))
-      .pause(670 milliseconds)
-      .exec(http("Page 2")
-        .get("/computers?p=2"))
-      .pause(629 milliseconds)
-      .exec(http("Page 3")
-        .get("/computers?p=3"))
-      .pause(734 milliseconds)
-      .exec(http("Page 4")
-        .get("/computers?p=4"))
-      .pause(5)
+    // repeat is a loop resolved at RUNTIME
+    val browse = repeat(4, "i") { // Note how we force the counter name so we can reuse it
+      exec(http("Page ${i}")
+        .get("/computers?p=${i}"))
+        .pause(1)
+    }
   }
 
   object Edit {
@@ -80,8 +73,11 @@ class AdvancedSimulationStep01 extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0")
 
-  // Now, we can write the scenario as a composition
-  val scn = scenario("Scenario Name").exec(Search.search, Browse.browse, Edit.edit)
+  val users = scenario("Users").exec(Search.search, Browse.browse)
+  val admins = scenario("Admins").exec(Search.search, Browse.browse, Edit.edit)
 
-  setUp(scn.inject(atOnceUsers(1)).protocols(httpConf))
+  setUp(
+    users.inject(rampUsers(10) over (10 seconds)),
+    admins.inject(rampUsers(2) over (10 seconds))
+  ).protocols(httpConf)
 }

@@ -7,7 +7,7 @@ import net.paoloambrosio.drizzle.core.events.VUserEventSource
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.mockito.Mockito
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
 
@@ -16,9 +16,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar {
 
+  val someContext = ScenarioContext()
+
   it should "delay vusers based on the load profile" in new TestContext {
     scenarioStream(Seq(
-        ScenarioProfile(emptyScenario, Seq(1 second, 2 seconds, 3 seconds))
+      ScenarioProfile(emptyScenario, Seq(1 second, 2 seconds, 3 seconds))
     ))
 
     initialDelays shouldBe Seq(1 second, 3 seconds, 6 seconds)
@@ -35,13 +37,10 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
 
   it should "send vuser started event" in new TestContext {
     val steps = producedSteps(emptyScenario)
-
-    // one artificial step added to the chain
-    steps.size shouldBe emptyScenario.steps.size + 1
     verifyNoMoreInteractions(vUserEventSource)
 
-    // call the artificial step
-    steps.head.action(ScenarioContext()).value
+    val artificialStep = steps.head
+    execute(artificialStep)
 
     verify(vUserEventSource, times(1)).fireVUserStarted()
   }
@@ -56,8 +55,8 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     ))
     verifyNoMoreInteractions(vUserEventSource)
 
-    // execute steps skipping the artificial step
-    executeStepChain(steps.tail)
+    val stepsSkippingArtificialOne = steps.tail
+    stepsSkippingArtificialOne.foreach(execute)
 
     val ordered = Mockito.inOrder(vUserEventSource)
     ordered.verify(vUserEventSource).fireVUserMetrics(ActionTimers(start, 1 milli))
@@ -73,9 +72,9 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     override implicit val ec: ExecutionContext = new CallingThreadExecutionContext
 
     lazy val emptyScenario = aScenario()
-    def aScenario(sa: ScenarioAction*) = Scenario("", sa.map(ScenarioStep(None, _)).toStream)
+    def aScenario(sa: ScenarioAction*) = Scenario("", sa.map(ActionStep(None, _)))
 
-    def producedSteps(scenario: Scenario) = scenarioStream(Seq(
+    def producedSteps(scenario: Scenario): Seq[ScenarioStep] = scenarioStream(Seq(
       ScenarioProfile(scenario, Seq(1 second))
     )).head.steps
 
@@ -105,8 +104,9 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
       ScenarioContext(None)
     )
 
-    def executeStepChain(steps: Stream[ScenarioStep]) = {
-      steps.foreach { ss => ss.action(ScenarioContext()).value.get.get } // A bit nasty...
+    def execute(step: ScenarioStep): Unit = step match {
+      case ActionStep(_, action) => action(someContext).value
+      case _ => ???
     }
   }
 

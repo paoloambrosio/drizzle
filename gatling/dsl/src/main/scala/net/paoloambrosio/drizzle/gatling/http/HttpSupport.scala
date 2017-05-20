@@ -6,9 +6,7 @@ import net.paoloambrosio.drizzle.http.checks.HttpCheck
 import net.paoloambrosio.drizzle.http.{HttpMethod, HttpRequestBuilder}
 
 
-trait HttpSupport {
-
-  import ExpressionSupport._
+trait HttpSupport extends ExpressionSupport {
 
   def http = HttpProtocol()
 
@@ -18,9 +16,7 @@ trait HttpSupport {
   }
 }
 
-case class HttpAction(hrb: HttpRequestBuilder) extends GatlingAction {
-
-  import ExpressionSupport._
+case class HttpAction(hrb: HttpRequestBuilder) extends GatlingAction with ExpressionSupport {
 
   def headers(newHeaders: Map[String, String]) = new HttpAction(newHeaders.foldLeft(hrb) {
     case (a, (n, v)) => a.withHeader(n, v)

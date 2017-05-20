@@ -6,7 +6,7 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.expression.Expression
-import net.paoloambrosio.drizzle.core.{LoadInjectionStepsFactory, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.{ActionStep, LoadInjectionStepsFactory, LoopStep, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.feeder.FeederActionFactory
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.{HttpAction, HttpProtocol}
@@ -43,8 +43,12 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
 
   protected def toDrizzle(scenario: GatlingScenario, protocols: Seq[Protocol]): DrizzleScenario = DrizzleScenario(
     name = scenario.name,
-    steps = scenario.actions.toStream.flatMap(toDrizzle(_, protocols))
+    steps = toDrizzle(scenario.actions, protocols)
   )
+
+  protected def toDrizzle(actions: Seq[GatlingAction], protocols: Seq[Protocol]): Seq[ScenarioStep] = {
+    actions.map(toDrizzle(_, protocols))
+  }
 
   protected def toDrizzle(injectionSteps: Seq[InjectionStep]): Seq[Duration] = injectionSteps flatMap {
     case AtOnceInjection(users) => verticalRamp(users)
@@ -52,24 +56,28 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
     case _ => ???
   }
 
-  protected def toDrizzle(action: GatlingAction, protocols: Seq[Protocol]): Stream[ScenarioStep] = action match {
-    case PauseAction(duration) => Stream(ScenarioStep(None, thinkTime(duration)))
-    case FeedingAction(feeder) => Stream(ScenarioStep(None, feed(feeder)))
+  protected def toDrizzle(action: GatlingAction, protocols: Seq[Protocol]): ScenarioStep = action match {
+    case PauseAction(duration) => ActionStep(None, thinkTime(duration))
+    case FeedingAction(feeder) => ActionStep(None, feed(feeder))
     case HttpAction(hrb) => {
       val requestEx = applyProtocol(hrb.requestEx, extract[HttpProtocol](protocols))
       val action = httpRequest(requestEx, hrb.checks)
-      Stream(ScenarioStep(Some(hrb.stepNameEx), action))
+      ActionStep(Some(hrb.stepNameEx), action)
     }
+    case LoopAction(times, counterName, body) => LoopStep(c => {
+      val sv = c.sessionVariables
+      val counter = sv.get(counterName).map(_.asInstanceOf[Int]).getOrElse(1)
+      if (counter < times(c).get)
+        (c.copy(sessionVariables = sv + ((counterName, counter + 1))), true)
+      else
+        (c.copy(sessionVariables = sv - (counterName)), false)
+    }, body.map(toDrizzle(_, protocols)))
     case _ => ???
   }
 
   def applyProtocol(requestEx: Expression[HttpRequest], httpProtocol: HttpProtocol): Expression[HttpRequest] = {
     transformUri(requestEx, fullURL(httpProtocol.baseURLs))
   }
-
-  //    val fullHeaders = httpProtocol.headers ++ r.headers
-  //    val actionBuilder = httpAction(r.method, fullUrl).headers(fullHeaders.toSeq)
-  //    timedAction(if (!r.formParams.isEmpty) actionBuilder.entity(r.formParams) else actionBuilder)
 
   private def transformUri(requestEx: Expression[HttpRequest], transform: String => Try[String]): Expression[HttpRequest] =
     requestEx andThen { for {

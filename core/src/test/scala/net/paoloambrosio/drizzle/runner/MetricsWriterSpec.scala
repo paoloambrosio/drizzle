@@ -7,7 +7,7 @@ import net.paoloambrosio.drizzle.metrics.{MetricsRepository, TimedActionMetrics}
 import net.paoloambrosio.drizzle.runner.events.{MetricsWriter, VUserMetrics}
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.TestActorSystem
 

@@ -4,7 +4,7 @@ import akka.testkit.{DefaultTimeout, ImplicitSender, TestKit, TestProbe}
 import net.paoloambrosio.drizzle.core.{ScenarioAction, ScenarioContext}
 import net.paoloambrosio.drizzle.throttler.ThrottlingActor._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import utils.{CallingThreadExecutionContext, TestActorSystem}
 
