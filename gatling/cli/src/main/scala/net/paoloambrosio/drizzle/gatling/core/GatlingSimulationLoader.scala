@@ -6,7 +6,7 @@ import java.time.Duration
 import net.paoloambrosio.drizzle.cli.SimulationLoader
 import net.paoloambrosio.drizzle.core.action.CoreActionFactory
 import net.paoloambrosio.drizzle.core.expression.Expression
-import net.paoloambrosio.drizzle.core.{ActionStep, LoadInjectionStepsFactory, LoopStep, ScenarioProfile, ScenarioStep, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
+import net.paoloambrosio.drizzle.core.{ActionResult, ActionStep, ConditionalStep, LoadInjectionStepsFactory, LoopStep, ScenarioAction, ScenarioContext, ScenarioProfile, ScenarioStep, SessionVariables, Scenario => DrizzleScenario, Simulation => DrizzleSimulation}
 import net.paoloambrosio.drizzle.feeder.FeederActionFactory
 import net.paoloambrosio.drizzle.gatling.core.{Scenario => GatlingScenario, Simulation => GatlingSimulation}
 import net.paoloambrosio.drizzle.gatling.http.{HttpAction, HttpProtocol}
@@ -14,6 +14,7 @@ import net.paoloambrosio.drizzle.http.HttpRequest
 import net.paoloambrosio.drizzle.http.action.HttpActionFactory
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 
+import scala.concurrent.Future
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
 
@@ -66,13 +67,38 @@ trait GatlingSimulationLoader extends SimulationLoader with LoadInjectionStepsFa
     }
     case LoopAction(times, counterName, body) => LoopStep(c => {
       val sv = c.sessionVariables
-      val counter = sv.get(counterName).map(_.asInstanceOf[Int]).getOrElse(1)
-      if (counter < times(c).get)
-        (c.copy(sessionVariables = sv + ((counterName, counter + 1))), true)
-      else
-        (c.copy(sessionVariables = sv - (counterName)), false)
+      val counter = incrementCounter(sv, counterName)
+      val exit = counter > times(c).get
+      val newSv = if (exit) sv - (counterName) else sv + ((counterName, counter))
+      (c.copy(sessionVariables = newSv), !exit)
     }, body.map(toDrizzle(_, protocols)))
+    case TryAction(times, counterName, body) => LoopStep(c => {
+      // TODO refactor: exit condition is the only difference with LoopAction
+      val sv = c.sessionVariables
+      val counter = incrementCounter(sv, counterName)
+      // NOTE: we check for errors only after executing the block at least once
+      val exit = (counter > times(c).get) || (counter > 1 && c.latestAction.error.isEmpty)
+      val newSv = if (exit) sv - (counterName) else sv + ((counterName, counter))
+      (c.copy(sessionVariables = newSv), !exit)
+    }, stopAtFirstFailure(body, protocols))
+    case ExitOnErrorAction => ActionStep(None, scenarioFailureToFutureFailure)
     case _ => ???
+  }
+
+  val scenarioFailureToFutureFailure: ScenarioAction = _ match {
+    case ScenarioContext(ActionResult(_, Some(exception)), _) => Future.failed(exception)
+    case sc => Future.successful(sc)
+  }
+
+  // TODO refactor
+  def stopAtFirstFailure(gas: List[GatlingAction], protocols: Seq[Protocol]): List[ScenarioStep] = gas match {
+    case ga1 :: ga2 :: tl => List(toDrizzle(ga1, protocols), ConditionalStep(sc => sc.latestAction.error.isEmpty, stopAtFirstFailure(ga2 :: tl, protocols)))
+    case ga :: Nil => List(toDrizzle(ga, protocols))
+    case Nil => Nil
+  }
+
+  def incrementCounter(sv: SessionVariables, counterName: String) = {
+    sv.get(counterName).map(_.asInstanceOf[Int] + 1).getOrElse(1)
   }
 
   def applyProtocol(requestEx: Expression[HttpRequest], httpProtocol: HttpProtocol): Expression[HttpRequest] = {

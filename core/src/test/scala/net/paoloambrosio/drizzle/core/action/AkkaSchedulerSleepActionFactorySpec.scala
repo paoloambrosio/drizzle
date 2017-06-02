@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 
 import akka.actor.Scheduler
 import com.miguno.akka.testing.VirtualTime
-import net.paoloambrosio.drizzle.core.{ActionTimers, ScenarioContext}
+import net.paoloambrosio.drizzle.core.{ActionResult, ActionTimers, ScenarioContext}
 import net.paoloambrosio.drizzle.utils.JavaTimeConversions._
 import org.scalatest.{FlatSpec, Matchers}
 import utils.CallingThreadExecutionContext
@@ -73,10 +73,10 @@ class AkkaSchedulerSleepActionFactorySpec extends FlatSpec with Matchers {
     val actionStart = OffsetDateTime.now()
 
     def contextWithElapsedTime(elapsedTime: Duration) = {
-      ScenarioContext(Some(ActionTimers(actionStart, elapsedTime)))
+      ScenarioContext(ActionResult(timers = Some(ActionTimers(actionStart, elapsedTime))))
     }
 
-    val contextWithNoTimers = ScenarioContext(None)
+    val contextWithNoTimers = ScenarioContext()
   }
 
 }

@@ -25,5 +25,10 @@ trait ActionSequenceBuilder[T <: ActionSequenceBuilder[T]] {
 
   private def defaultCounter = UUID.randomUUID.toString
   def repeat(times: Expression[Int], counterName: String = defaultCounter)(chain: T): T =
-    exec(List(LoopAction(times, counterName, chain.actions)))
+    exec(LoopAction(times, counterName, chain.actions))
+
+  def tryMax(times: Expression[Int], counterName: String = defaultCounter)(chain: ChainBuilder): T =
+    exec(TryAction(times, defaultCounter, chain.actions))
+
+  def exitHereIfFailed: T = exec(ExitOnErrorAction)
 }

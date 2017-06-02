@@ -41,7 +41,9 @@ trait TimedActionFactory {
     sc: ScenarioContext => {
       pre.andThen(timed(f))(sc).flatMap {
         case (timers, output) => Future.fromTry(
-          post(sc.copy(latestAction = Some(timers)), output).map(_._1)
+          post(sc.copy(
+            latestAction = sc.latestAction.copy(timers = Some(timers))
+          ), output).map(_._1)
         )
       }
     }

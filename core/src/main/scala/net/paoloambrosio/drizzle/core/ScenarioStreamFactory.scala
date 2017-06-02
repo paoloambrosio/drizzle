@@ -50,7 +50,7 @@ trait ScenarioStreamFactory { this: SleepActionFactory =>
 
   private def wrapActionSendingMetrics(action: ScenarioAction) = action andThen { out =>
     out.onSuccess {
-      case ScenarioContext(Some(at), _) => vUserEventSource.fireVUserMetrics(at)
+      case ScenarioContext(ActionResult(Some(at), None), _) => vUserEventSource.fireVUserMetrics(at)
     }
     out
   }

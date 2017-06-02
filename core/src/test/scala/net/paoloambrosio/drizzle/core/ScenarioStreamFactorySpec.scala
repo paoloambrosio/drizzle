@@ -97,11 +97,11 @@ class ScenarioStreamFactorySpec extends FlatSpec with Matchers with MockitoSugar
     // ACTION METRICS
 
     def outputTimers(start: OffsetDateTime, elapsedTime: Duration): ScenarioAction = sc => Future.successful(
-      ScenarioContext(Some(ActionTimers(start, elapsedTime)))
+      ScenarioContext(ActionResult(timers = Some(ActionTimers(start, elapsedTime))))
     )
 
     def eraseTimers(): ScenarioAction = sc => Future.successful(
-      ScenarioContext(None)
+      ScenarioContext(ActionResult(timers = None))
     )
 
     def execute(step: ScenarioStep): Unit = step match {

@@ -10,10 +10,12 @@ import scala.concurrent.Future
 package object core {
 
   type SessionVariables = Map[String, Any]
+  val SessionVariables = Map
 
   case class ActionTimers(start: OffsetDateTime, elapsedTime: Duration)
+  case class ActionResult(timers: Option[ActionTimers] = None, error: Option[Exception] = None)
 
-  case class ScenarioContext(latestAction: Option[ActionTimers] = None, sessionVariables: SessionVariables = Map.empty)
+  case class ScenarioContext(latestAction: ActionResult = ActionResult(), sessionVariables: SessionVariables = SessionVariables.empty)
 
   type ScenarioAction = ScenarioContext => Future[ScenarioContext] //
 

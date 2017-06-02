@@ -75,7 +75,7 @@ class VUser(clock: Clock) extends Actor with FSM[VUser.State, VUser.Data] {
 
   initialize()
 
-  private def initialContext = ScenarioContext(None)
+  private def initialContext = ScenarioContext()
 
   private def exec(actionExecutor: ActionExecutor): Unit = {
     actionExecutor.action() map (NextStep(_)) pipeTo self

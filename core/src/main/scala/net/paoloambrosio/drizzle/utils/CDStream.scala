@@ -9,7 +9,6 @@ trait CDStream[C, T] {
   def apply(c: C): CDStreamEntry[C, T]
   def append(rest: => CDStream[C, T]): CDStream[C, T]
   def map[V](f: T => V): CDStream[C, V]
-//  def flatMap[V](f: (C => T) => CDStream[C, V]): CDStream[C, V]
 }
 
 trait CDStreamEntry[C, T] {
@@ -24,7 +23,6 @@ object CDStream {
     new CDStreamOperations[C, T](stream)
 
   class CDStreamOperations[C, T](cds: => CDStream[C, T]) {
-    def @::(hd: T): CDStream[C, T] = new StaticCDStream(c => hd, cds) // REMOVE ME!!!! USED DURING REFACTORING
     def @::(hd: C => T): CDStream[C, T] = new StaticCDStream(hd, cds)
     def @:::(prefix: CDStream[C, T]): CDStream[C, T] = prefix append cds
   }
@@ -36,8 +34,6 @@ object CDStream {
       else Some((entry.head, entry.tail))
     }
   }
-
-  // TODO *variance
 
   def empty[C, T]: CDStream[C, T] = new CDStream[C, T] {
     override def apply(c: C) = new CDStreamEntry[C, T] {
