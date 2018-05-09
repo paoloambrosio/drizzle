@@ -3,7 +3,7 @@
 At the moment it can run some of Gatling's tutorial scripts:
 
 ```
-sbt 'gatling-tutorial-example/runMain net.paoloambrosio.drizzle.gatling.cli.GatlingCli computerdatabase.BasicSimulation'
+sbt 'gatlingTutorial/runMain net.paoloambrosio.drizzle.gatling.cli.GatlingCli computerdatabase.BasicSimulation'
 ```
 
 ## Build

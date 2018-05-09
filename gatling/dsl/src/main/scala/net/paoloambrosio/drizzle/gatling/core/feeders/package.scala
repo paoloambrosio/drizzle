@@ -10,14 +10,11 @@ package object feeders {
 
   trait StandardFeeders {
 
-    def csv(fileName: String): RichFeeder = {
-      CsvFeederFactory.csv(Source.fromFile(resolve(fileName)))
+    def csv(resourceName: String): RichFeeder = {
+      CsvFeederFactory.csv(Source.fromResource(resolve(resourceName)))
     }
 
-    private def resolve(fileName: String) = { // TODO
-      val cl = getClass.getClassLoader
-      cl.getResource(s"data/${fileName}").getFile
-    }
+    private def resolve(fileName: String) = s"data/${fileName}" // TODO
   }
 
   implicit class RichFeeder(val self: Feeder) extends AnyVal {
