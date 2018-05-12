@@ -31,4 +31,7 @@ trait ActionSequenceBuilder[T <: ActionSequenceBuilder[T]] {
     exec(TryAction(times, defaultCounter, chain.actions))
 
   def exitHereIfFailed: T = exec(ExitOnErrorAction)
+
+  def exitBlockOnFail(chain: ChainBuilder): T = tryMax(Expression.uninterpreted(1))(chain)
+
 }
