@@ -21,7 +21,7 @@ trait AkkaSchedulerSleepActionFactory extends SleepActionFactory {
     */
   override def thinkTime(duration: Duration): ScenarioAction = {
     scenarioContext: ScenarioContext => {
-      after(duration, scheduler)(Future.successful(scenarioContext.copy(latestAction = None)))
+      after(duration, scheduler)(Future.successful(scenarioContext.copy(latestAction = ActionResult())))
     }
   }
 
@@ -32,9 +32,9 @@ trait AkkaSchedulerSleepActionFactory extends SleepActionFactory {
     * @param duration
     */
   override def pacing(duration: Duration): ScenarioAction = {
-    scenarioContext: ScenarioContext => {
-      val sleepTime = scenarioContext.latestAction.map(at => duration.minus(at.elapsedTime)).getOrElse(Duration.ZERO)
-      after(sleepTime, scheduler)(Future.successful(scenarioContext.copy(latestAction = None)))
+    sc: ScenarioContext => {
+      val sleepTime = sc.latestAction.timers.map(at => duration.minus(at.elapsedTime)).getOrElse(Duration.ZERO)
+      after(sleepTime, scheduler)(Future.successful(sc.copy(latestAction = ActionResult())))
     }
   }
 }

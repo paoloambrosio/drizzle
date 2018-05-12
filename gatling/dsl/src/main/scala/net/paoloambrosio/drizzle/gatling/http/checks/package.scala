@@ -25,9 +25,13 @@ package object checks {
 
     override def actual(response: HttpResponse) = response.status
 
-    // TODO Expression[Int]
-    override def is(expected: Int): HttpCheck = buildCheck { r =>
-      if (r != expected) throw new Exception(s"Check failed: ${r} was not ${expected}")
+    override def is(expected: Expression[Int]): HttpCheck = buildCheck { sc => actual =>
+      expected(sc).flatMap(expected => {
+        if (expected == actual)
+          Success(())
+        else
+          Failure(new Exception(s"Check failed: ${actual} was not ${expected}"))
+      })
     }
   }
 

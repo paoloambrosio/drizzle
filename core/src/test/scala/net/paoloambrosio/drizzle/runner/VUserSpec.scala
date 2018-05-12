@@ -80,7 +80,7 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     val clock: Clock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.systemDefault())
 
     val testStartTime = OffsetDateTime.now(clock)
-    val initialContext = ScenarioContext(None)
+    val initialContext = ScenarioContext()
     val incrementStartByASecond = changeTimers(start = Duration.ofSeconds(1))
 
     def successful(f: ScenarioContext => ScenarioContext = c => c) = recordContext { c: ScenarioContext => {
@@ -113,10 +113,10 @@ class VUserSpec extends TestKit(TestActorSystem()) with ImplicitSender
     def actionsExecuted = contexts.length
 
     def changeTimers(start: Duration = Duration.ZERO, elapsedTime: Duration = Duration.ZERO): ScenarioContext => ScenarioContext = { c =>
-      c.copy(latestAction = c.latestAction.map(_.copy(
-        start = c.latestAction.get.start.plus(start),
+      c.copy(latestAction = c.latestAction.copy(timers = c.latestAction.timers.map(_.copy(
+        start = c.latestAction.timers.get.start.plus(start),
         elapsedTime = elapsedTime
-      )))
+      ))))
     }
   }
 
